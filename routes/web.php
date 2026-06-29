@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 /** @var \Intisari\Application $app */
 
-$app->get('/', [\App\Controllers\HomeController::class, 'index']);
+$app->get('/', [\App\Routing\ContentRouter::class, 'handle']);
 $app->get('/posts', [\App\Controllers\PostController::class, 'index']);
-$app->get('/posts/{slug}', [\App\Controllers\PostController::class, 'show']);
 
 $app->get('/health', function () {
     return ['status' => 'OK'];
@@ -111,4 +110,6 @@ $app->post('/admin/plugins/{plugin}/deactivate', [\App\Controllers\Admin\PluginC
 $app->get('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'index']);
 $app->post('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'store']);
 
-$app->get('/{pageSlug}', [\App\Controllers\PageController::class, 'show']);
+$app->get('/{p1}', [\App\Routing\ContentRouter::class, 'handle']);
+$app->get('/{p1}/{p2}', [\App\Routing\ContentRouter::class, 'handle']);
+$app->get('/{p1}/{p2}/{p3}', [\App\Routing\ContentRouter::class, 'handle']);
