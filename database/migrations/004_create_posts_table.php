@@ -11,6 +11,8 @@ return new class {
             excerpt TEXT,
             status VARCHAR(20) DEFAULT 'draft',
             type VARCHAR(20) DEFAULT 'post',
+            parent_id INTEGER DEFAULT 0,
+            menu_order INTEGER DEFAULT 0,
             comment_status VARCHAR(20) DEFAULT 'open',
             published_at DATETIME,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
