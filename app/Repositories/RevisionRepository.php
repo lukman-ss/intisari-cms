@@ -59,6 +59,46 @@ class RevisionRepository
         $this->cleanupRevisions($post['id'], $maxRevisions);
     }
 
+    public function createAutosave(int $postId, array $data): int
+    {
+        $stmt = $this->db->prepare("SELECT * FROM posts WHERE id = ?");
+        $stmt->execute([$postId]);
+        $post = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$post) return 0;
+
+        $stmt = $this->db->prepare("SELECT id FROM posts WHERE parent_id = ? AND type = 'revision' AND slug LIKE '%-autosave'");
+        $stmt->execute([$postId]);
+        $autosaveId = $stmt->fetchColumn();
+
+        if ($autosaveId) {
+            $stmt = $this->db->prepare("UPDATE posts SET title = ?, content = ?, excerpt = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $stmt->execute([
+                $data['title'] ?? $post['title'],
+                $data['content'] ?? $post['content'],
+                $data['excerpt'] ?? $post['excerpt'],
+                $autosaveId
+            ]);
+            return (int)$autosaveId;
+        }
+
+        $stmt = $this->db->prepare("
+            INSERT INTO posts (parent_id, type, title, slug, content, excerpt, status, author_id, created_at, updated_at) 
+            VALUES (?, 'revision', ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ");
+        $stmt->execute([
+            $post['id'],
+            $data['title'] ?? $post['title'],
+            $post['slug'] . '-autosave',
+            $data['content'] ?? $post['content'],
+            $data['excerpt'] ?? $post['excerpt'],
+            'inherit',
+            $post['author_id']
+        ]);
+
+        return (int)$this->db->lastInsertId();
+    }
+
     private function cleanupRevisions(int $postId, int $max): void
     {
         $stmt = $this->db->prepare("
