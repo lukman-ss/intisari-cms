@@ -16,7 +16,7 @@ class CommentRepository
         $this->db = ConnectionFactory::make();
     }
 
-    public function paginateAdmin(int $page = 1, int $perPage = 20, string $status = ''): array
+    public function paginateAdmin(int $page = 1, int $perPage = 20, string $status = '', string $search = ''): array
     {
         $offset = ($page - 1) * $perPage;
         
@@ -24,11 +24,19 @@ class CommentRepository
         $params = [];
         
         if ($status !== '') {
-            $where .= " AND status = ?";
+            $where .= " AND c.status = ?";
             $params[] = $status;
         }
 
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM comments $where");
+        if ($search !== '') {
+            $where .= " AND (c.author_name LIKE ? OR c.author_email LIKE ? OR c.content LIKE ?)";
+            $searchParam = '%' . $search . '%';
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+            $params[] = $searchParam;
+        }
+
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM comments c $where");
         $stmt->execute($params);
         $total = (int)$stmt->fetchColumn();
 

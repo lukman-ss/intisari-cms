@@ -13,10 +13,34 @@
         <div style="clear:both;"></div>
     </div>
 
+            <div style="margin-top: 10px; margin-bottom: 10px;">
+        <a href="/admin/comments" style="<?= $status === '' ? 'font-weight:bold;' : '' ?>">All</a> | 
+        <a href="/admin/comments?status=pending" style="<?= $status === 'pending' ? 'font-weight:bold;' : '' ?>">Pending</a> | 
+        <a href="/admin/comments?status=approved" style="<?= $status === 'approved' ? 'font-weight:bold;' : '' ?>">Approved</a> | 
+        <a href="/admin/comments?status=spam" style="<?= $status === 'spam' ? 'font-weight:bold;' : '' ?>">Spam</a> | 
+        <a href="/admin/comments?status=trash" style="<?= $status === 'trash' ? 'font-weight:bold;' : '' ?>">Trash</a>
+        
+        <form method="GET" style="float: right;">
+            <?php if ($status): ?>
+                <input type="hidden" name="status" value="<?= \App\Support\View::escape($status) ?>">
+            <?php endif; ?>
+            <input type="search" name="search" value="<?= \App\Support\View::escape($search ?? '') ?>" placeholder="Search comments...">
+            <button type="submit">Search Comments</button>
+        </form>
+    </div>
+    <form method="POST" action="/admin/comments/bulk">
+        <?= \App\Support\Csrf::field() ?>
+        <div style="margin-bottom: 10px;">
+            <select name="action">
+                <option value="">Bulk Actions</option>
+                <option value="approve">Approve</option><option value="spam">Mark as Spam</option><option value="trash">Move to Trash</option><option value="delete">Delete Permanently</option>
+            </select>
+            <button type="submit" class="button" onclick="return confirm('Are you sure you want to perform this bulk action?');">Apply</button>
+        </div>
     <table class="box" style="width: 100%; border-collapse: collapse; clear: both; margin-top:15px;">
         <thead>
             <tr style="text-align: left; border-bottom: 1px solid #ccd0d4;">
-                <th style="padding: 10px;">Author</th>
+                <th style="padding: 10px; width: 30px;"><input type="checkbox" onclick="let checkboxes = document.querySelectorAll('input[name=\'ids[]\']'); for(let cb of checkboxes) { cb.checked = this.checked; }"></th><th style="padding: 10px;">Author</th>
                 <th style="padding: 10px;">Comment</th>
                 <th style="padding: 10px;">In Response To</th>
                 <th style="padding: 10px;">Submitted On</th>
@@ -24,7 +48,7 @@
         </thead>
         <tbody>
             <?php if (empty($comments)): ?>
-                <tr><td colspan="4" style="padding: 10px;">No comments found.</td></tr>
+                <tr><td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $comment->id ?>"></td><td colspan="4" style="padding: 10px;">No comments found.</td></tr>
             <?php else: ?>
                 <?php foreach ($comments as $item): ?>
                 <tr style="border-bottom: 1px solid #eee; <?= $item['status'] === 'pending' ? 'background:#fef7f1;' : '' ?>">
@@ -61,6 +85,7 @@
             <?php endif; ?>
         </tbody>
     </table>
+    </form>
 
     <div class="pagination" style="margin-top: 15px; text-align: right;">
         <?php if ($paginator['page'] > 1): ?>

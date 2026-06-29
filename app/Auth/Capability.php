@@ -17,6 +17,7 @@ class Capability
     public const MODERATE_COMMENTS = 'moderate_comments';
     public const MANAGE_THEMES = 'manage_themes';
     public const MANAGE_PLUGINS = 'manage_plugins';
+    public const UNFILTERED_HTML = 'unfiltered_html';
 
     public static function all(): array
     {
@@ -32,6 +33,7 @@ class Capability
             self::MODERATE_COMMENTS,
             self::MANAGE_THEMES,
             self::MANAGE_PLUGINS,
+            self::UNFILTERED_HTML,
         ];
     }
 }

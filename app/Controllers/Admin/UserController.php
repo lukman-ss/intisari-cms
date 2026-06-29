@@ -129,4 +129,36 @@ class UserController
         Flash::set('success', 'User deleted.');
         return Redirect::to('/admin/users');
     }
+
+    public function bulk(\Lukman\Http\Request $request): \Lukman\Http\Response
+    {
+        if (!\App\Auth\CapabilityChecker::checkCurrentUser(\App\Auth\Capability::MANAGE_USERS)) {
+            \App\Support\Flash::set('error', 'Permission denied.');
+            return \App\Support\Redirect::to('/admin/users');
+        }
+
+        $action = $_POST['action'] ?? '';
+        $ids = $_POST['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            \App\Support\Flash::set('error', 'No users selected.');
+            return \App\Support\Redirect::to('/admin/users');
+        }
+
+        if ($action === 'delete') {
+            foreach ($ids as $id) {
+                if ((int)$id === 1) {
+                    \App\Support\Flash::set('error', 'Cannot delete the main admin user.');
+                    continue;
+                }
+                if ((int)$id === \App\Auth\AuthManager::guard()->id()) {
+                    \App\Support\Flash::set('error', 'Cannot delete yourself.');
+                    continue;
+                }
+                $this->repo->delete((int)$id);
+            }
+            \App\Support\Flash::set('success', 'Bulk action completed.');
+        }
+        return \App\Support\Redirect::back('/admin/users');
+    }
 }

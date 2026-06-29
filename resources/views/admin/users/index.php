@@ -8,21 +8,30 @@
         <button type="submit">Search Users</button>
     </form>
 
+        <form method="POST" action="/admin/users/bulk">
+        <?= \App\Support\Csrf::field() ?>
+        <div style="margin-bottom: 10px;">
+            <select name="action">
+                <option value="">Bulk Actions</option>
+                <option value="delete">Delete Permanently</option>
+            </select>
+            <button type="submit" class="button" onclick="return confirm('Are you sure you want to perform this bulk action?');">Apply</button>
+        </div>
     <table class="box" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
         <thead>
             <tr style="text-align: left; border-bottom: 1px solid #ccd0d4;">
-                <th style="padding: 10px;">Username</th>
+                <th style="padding: 10px; width: 30px;"><input type="checkbox" onclick="let checkboxes = document.querySelectorAll('input[name=\'ids[]\']'); for(let cb of checkboxes) { cb.checked = this.checked; }"></th><th style="padding: 10px;">Username</th>
                 <th style="padding: 10px;">Email</th>
                 <th style="padding: 10px;">Actions</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($users)): ?>
-                <tr><td colspan="3" style="padding: 10px;">No users found.</td></tr>
+                <tr><td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $u['id'] ?? $u['id'] ?>"></td><td colspan="3" style="padding: 10px;">No users found.</td></tr>
             <?php else: ?>
                 <?php foreach ($users as $u): ?>
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px;">
+                    <td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $u['id'] ?? $u['id'] ?>"></td><td style="padding: 10px;">
                         <strong><?= \App\Support\View::escape($u['username']) ?></strong>
                     </td>
                     <td style="padding: 10px;">
@@ -40,6 +49,7 @@
             <?php endif; ?>
         </tbody>
     </table>
+    </form>
 
     <div class="pagination" style="margin-top: 15px; text-align: right;">
         <?php if ($paginator['page'] > 1): ?>

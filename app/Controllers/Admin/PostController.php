@@ -184,4 +184,35 @@ class PostController
         Flash::set('success', 'Post deleted permanently.');
         return Redirect::to('/admin/posts?status=trash');
     }
+
+    public function bulk(\Lukman\Http\Request $request): \Lukman\Http\Response
+    {
+        if (!\App\Auth\CapabilityChecker::checkCurrentUser(\App\Auth\Capability::DELETE_POSTS)) {
+            \App\Support\Flash::set('error', 'Permission denied.');
+            return \App\Support\Redirect::to('/admin/posts');
+        }
+
+        $action = $_POST['action'] ?? '';
+        $ids = $_POST['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            \App\Support\Flash::set('error', 'No posts selected.');
+            return \App\Support\Redirect::to('/admin/posts');
+        }
+
+        foreach ($ids as $id) {
+            $post = $this->repo->find((int)$id);
+            if ($post && $post->type === \App\Support\PostType::POST) {
+                if ($action === 'trash') {
+                    $this->repo->trash((int)$id);
+                } elseif ($action === 'restore') {
+                    $this->repo->update((int)$id, ['status' => \App\Support\PostStatus::DRAFT]);
+                } elseif ($action === 'delete') {
+                    $this->repo->delete((int)$id);
+                }
+            }
+        }
+        \App\Support\Flash::set('success', 'Bulk action completed.');
+        return \App\Support\Redirect::back('/admin/posts');
+    }
 }
