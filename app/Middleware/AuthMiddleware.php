@@ -4,25 +4,18 @@ declare(strict_types=1);
 
 namespace App\Middleware;
 
-use App\Auth\Auth;
-use Lukman\Http\MiddlewareInterface;
-use Lukman\Http\RedirectResponse;
+use App\Auth\AuthManager;
+use App\Support\Redirect;
 use Lukman\Http\Request;
-use Lukman\Http\RequestHandlerInterface;
-use Lukman\Http\Response;
 
-/**
- * Protect routes that require an authenticated user.
- * Unauthenticated requests are redirected to /admin/login.
- */
-final class AuthMiddleware implements MiddlewareInterface
+class AuthMiddleware
 {
-    public function process(Request $request, RequestHandlerInterface $handler): Response
+    public function handle(Request $request, \Closure $next)
     {
-        if (!Auth::check()) {
-            return new RedirectResponse('/admin/login');
+        if (!AuthManager::guard()->check()) {
+            return Redirect::to('/admin/login');
         }
 
-        return $handler->handle($request);
+        return $next($request);
     }
 }

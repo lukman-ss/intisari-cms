@@ -4,68 +4,33 @@ declare(strict_types=1);
 
 namespace App\Controllers\Auth;
 
-use App\Auth\Auth;
-use App\Models\User;
-use Intisari\Application;
-use Lukman\Http\RedirectResponse;
+use App\Auth\AuthManager;
+use App\Support\Flash;
+use App\Support\Redirect;
 use Lukman\Http\Request;
 use Lukman\Http\Response;
 
-final class LoginController
+class LoginController
 {
-    private Application $app;
-
-    public function __construct()
+    public function show(): string|Response
     {
-        $this->app = Application::getGlobal() ?? throw new \RuntimeException('No global application instance.');
+        if (AuthManager::guard()->check()) {
+            return Redirect::to('/admin/dashboard');
+        }
+
+        return app()->render('auth/login');
     }
 
-    public function showForm(Request $request): Response
+    public function authenticate(Request $request): Response
     {
-        $session = $this->app->session();
-        $error   = null;
+        $username = $_POST['username'] ?? '';
+        $password = $_POST['password'] ?? '';
 
-        if ($session->started()) {
-            $error = $session->get('_flash_error');
+        if (AuthManager::guard()->attempt($username, $password)) {
+            return Redirect::to('/admin/dashboard');
         }
 
-        $html = $this->app->render('auth.login', [
-            'error'   => $error,
-            'appName' => $this->app->config()->get('app.name', 'Intisari CMS'),
-        ]);
-
-        return new Response($html);
-    }
-
-    public function login(Request $request): Response
-    {
-        $email    = (string) $request->input('email', '');
-        $password = (string) $request->input('password', '');
-        $session  = $this->app->session();
-
-        if ($email === '' || $password === '') {
-            if ($session->started()) {
-                $session->flash('_flash_error', 'Email and password are required.');
-            }
-            return new RedirectResponse('/admin/login');
-        }
-
-        $userModel = new User($this->app->db());
-        $user      = $userModel->findByEmail($email);
-
-        if ($user === null || !$userModel->verifyPassword($user, $password)) {
-            if ($session->started()) {
-                $session->flash('_flash_error', 'Invalid credentials.');
-            }
-            return new RedirectResponse('/admin/login');
-        }
-
-        Auth::login($user);
-
-        if ($session->started()) {
-            $session->regenerate();
-        }
-
-        return new RedirectResponse('/admin/dashboard');
+        Flash::set('error', 'Invalid credentials.');
+        return Redirect::back('/admin/login');
     }
 }

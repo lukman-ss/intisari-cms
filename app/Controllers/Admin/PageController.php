@@ -4,107 +4,197 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
-use App\Auth\Auth;
-use App\Controllers\BaseController;
-use App\Models\Page;
-use Lukman\Http\RedirectResponse;
+use App\Auth\AuthManager;
+use App\Auth\Capability;
+use App\Auth\CapabilityChecker;
+use App\Repositories\PostRepository;
+use App\Support\Flash;
+use App\Support\PostStatus;
+use App\Support\PostType;
+use App\Support\Redirect;
+use App\Support\Slug;
+use App\Validation\PostValidator;
 use Lukman\Http\Request;
 use Lukman\Http\Response;
 
-final class PageController extends BaseController
+class PageController
 {
-    private function model(): Page
+    private PostRepository $repo;
+    private PostValidator $validator;
+
+    public function __construct()
     {
-        return new Page($this->app->db());
+        $this->repo = new PostRepository();
+        $this->validator = new PostValidator();
     }
 
-    private function flashError(): ?string
+    public function index(Request $request): string|Response
     {
-        $session = $this->app->session();
-        return $session->started() ? $session->get('_flash_error') : null;
-    }
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            Flash::set('error', 'You do not have permission to manage pages.');
+            return Redirect::to('/admin/dashboard');
+        }
 
-    public function index(Request $request): Response
-    {
-        $html = $this->app->render('admin.pages.index', [
-            'authUser' => Auth::user(),
-            'pages'    => $this->model()->all(),
-            'appName'  => $this->appName(),
+        $page = (int)($_GET['page'] ?? 1);
+        $search = $_GET['search'] ?? '';
+        $status = $_GET['status'] ?? '';
+
+        $paginator = $this->repo->paginate(PostType::PAGE, $page, 20, (string)$search, (string)$status);
+
+        $content = app()->render('admin/pages/index', [
+            'pages' => $paginator['data'],
+            'search' => $search,
+            'status' => $status,
+            'paginator' => $paginator,
         ]);
 
-        return new Response($html);
+        return app()->render('layouts/admin', [
+            'title' => 'Pages',
+            'content' => $content
+        ]);
     }
 
-    public function create(Request $request): Response
+    public function create(): string|Response
     {
-        $html = $this->app->render('admin.pages.create', [
-            'authUser' => Auth::user(),
-            'error'    => $this->flashError(),
-            'appName'  => $this->appName(),
-        ]);
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            Flash::set('error', 'You do not have permission to create pages.');
+            return Redirect::to('/admin/dashboard');
+        }
 
-        return new Response($html);
+        $allPages = $this->repo->paginate(PostType::PAGE, 1, 100, '', PostStatus::PUBLISHED)['data'];
+
+        $content = app()->render('admin/pages/create', ['allPages' => $allPages]);
+        return app()->render('layouts/admin', [
+            'title' => 'Add New Page',
+            'content' => $content
+        ]);
     }
 
     public function store(Request $request): Response
     {
-        $data    = $request->only(['title', 'slug', 'content', 'status']);
-        $session = $this->app->session();
-
-        try {
-            $this->app->validate($data, [
-                'title' => 'required',
-                'slug'  => 'required',
-            ]);
-        } catch (\Lukman\Validation\Exception\ValidationException $e) {
-            if ($session->started()) {
-                $session->flash('_flash_error', implode(', ', $e->errors()->all()));
-            }
-            return new RedirectResponse('/admin/pages/create');
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            return Redirect::to('/admin/dashboard');
         }
 
-        $data['author_id'] = Auth::id() ?? 0;
-        $data['status']    = $data['status'] !== '' ? $data['status'] : 'draft';
+        $data = $_POST;
+        $data['type'] = PostType::PAGE;
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $data['slug'] = Slug::generate($data['title']);
+        }
+        
+        $data['parent_id'] = (int)($data['parent_id'] ?? 0);
+        $data['menu_order'] = (int)($data['menu_order'] ?? 0);
 
-        $this->model()->create($data);
+        $user = AuthManager::guard()->user();
+        $data['author_id'] = $user['id'] ?? 1;
 
-        return new RedirectResponse('/admin/pages');
+        if (isset($data['status']) && $data['status'] === PostStatus::PUBLISHED) {
+            $data['published_at'] = date('Y-m-d H:i:s');
+        }
+
+        $errors = $this->validator->validate($data);
+
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back('/admin/pages/create');
+        }
+
+        $this->repo->create($data);
+        Flash::set('success', 'Page created successfully.');
+        return Redirect::to('/admin/pages');
     }
 
-    public function edit(Request $request, string $id): Response
+    public function edit(Request $request, string $id): string|Response
     {
-        $page = $this->model()->find((int) $id);
-
-        if ($page === null) {
-            return new Response('Page not found.', 404);
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            return Redirect::to('/admin/dashboard');
         }
 
-        $html = $this->app->render('admin.pages.edit', [
-            'authUser' => Auth::user(),
-            'page'     => $page,
-            'error'    => $this->flashError(),
-            'appName'  => $this->appName(),
-        ]);
+        $pageData = $this->repo->find((int)$id);
+        if (!$pageData || $pageData->type !== PostType::PAGE) {
+            Flash::set('error', 'Page not found.');
+            return Redirect::to('/admin/pages');
+        }
 
-        return new Response($html);
+        $allPages = $this->repo->paginate(PostType::PAGE, 1, 100, '', PostStatus::PUBLISHED)['data'];
+
+        $content = app()->render('admin/pages/edit', [
+            'page' => $pageData,
+            'allPages' => $allPages,
+        ]);
+        return app()->render('layouts/admin', [
+            'title' => 'Edit Page',
+            'content' => $content
+        ]);
     }
 
     public function update(Request $request, string $id): Response
     {
-        $data = array_filter(
-            $request->only(['title', 'slug', 'content', 'status']),
-            fn ($v) => $v !== null && $v !== ''
-        );
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            return Redirect::to('/admin/dashboard');
+        }
 
-        $this->model()->update((int) $id, $data);
+        $pageData = $this->repo->find((int)$id);
+        if (!$pageData || $pageData->type !== PostType::PAGE) {
+            return Redirect::to('/admin/pages');
+        }
 
-        return new RedirectResponse('/admin/pages');
+        $data = $_POST;
+        $data['type'] = PostType::PAGE;
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $data['slug'] = Slug::generate($data['title']);
+        }
+
+        $data['parent_id'] = (int)($data['parent_id'] ?? 0);
+        $data['menu_order'] = (int)($data['menu_order'] ?? 0);
+
+        if (isset($data['status']) && $data['status'] === PostStatus::PUBLISHED && empty($pageData->published_at)) {
+            $data['published_at'] = date('Y-m-d H:i:s');
+        }
+
+        $errors = $this->validator->validate($data, (int)$id);
+
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back("/admin/pages/{$id}/edit");
+        }
+
+        $this->repo->update((int)$id, $data);
+        Flash::set('success', 'Page updated successfully.');
+        return Redirect::to("/admin/pages/{$id}/edit");
+    }
+
+    public function trash(Request $request, string $id): Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            Flash::set('error', 'Permission denied.');
+            return Redirect::to('/admin/pages');
+        }
+
+        $this->repo->trash((int)$id);
+        Flash::set('success', 'Page moved to trash.');
+        return Redirect::to('/admin/pages');
+    }
+
+    public function restore(Request $request, string $id): Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            return Redirect::to('/admin/pages');
+        }
+
+        $this->repo->update((int)$id, ['status' => PostStatus::DRAFT]);
+        Flash::set('success', 'Page restored from trash.');
+        return Redirect::to('/admin/pages');
     }
 
     public function destroy(Request $request, string $id): Response
     {
-        $this->model()->delete((int) $id);
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            return Redirect::to('/admin/pages');
+        }
 
-        return new RedirectResponse('/admin/pages');
+        $this->repo->delete((int)$id);
+        Flash::set('success', 'Page deleted permanently.');
+        return Redirect::to('/admin/pages?status=trash');
     }
 }

@@ -1,31 +1,74 @@
-<?php $extend('layout.admin'); ?>
-<?php $start('slot'); ?>
-<h1>Posts</h1>
-<p style="margin-bottom:1rem"><a href="/admin/posts/create" class="btn btn-primary btn-sm">+ New Post</a></p>
-<div class="card">
-    <?php if (empty($posts)): ?>
-        <p style="color:#888">No posts yet.</p>
-    <?php else: ?>
-        <table>
-            <thead><tr><th>ID</th><th>Title</th><th>Slug</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
-            <tbody>
-            <?php foreach ($posts as $p): ?>
-                <tr>
-                    <td><?= (int) $p['id'] ?></td>
-                    <td><?= htmlspecialchars($p['title']) ?></td>
-                    <td><?= htmlspecialchars($p['slug']) ?></td>
-                    <td><?= htmlspecialchars($p['status'] ?? 'draft') ?></td>
-                    <td><?= htmlspecialchars($p['created_at'] ?? '') ?></td>
-                    <td>
-                        <a href="/admin/posts/<?= (int) $p['id'] ?>" class="btn btn-primary btn-sm">Edit</a>
-                        <form action="/admin/posts/<?= (int) $p['id'] ?>/delete" method="POST" style="display:inline">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete?')">Delete</button>
-                        </form>
+<?php declare(strict_types=1); ?>
+<div class="wrap">
+    <h1 style="display:inline-block; margin-right: 15px;">Posts</h1>
+    <a href="/admin/posts/create" style="padding:4px 8px; border:1px solid #0073aa; text-decoration:none; color:#0073aa; border-radius:3px;">Add New</a>
+
+    <div style="margin-top: 10px; margin-bottom: 10px;">
+        <a href="/admin/posts" style="<?= $status === '' ? 'font-weight:bold;' : '' ?>">All</a> | 
+        <a href="/admin/posts?status=published" style="<?= $status === 'published' ? 'font-weight:bold;' : '' ?>">Published</a> | 
+        <a href="/admin/posts?status=draft" style="<?= $status === 'draft' ? 'font-weight:bold;' : '' ?>">Draft</a> | 
+        <a href="/admin/posts?status=trash" style="<?= $status === 'trash' ? 'font-weight:bold;' : '' ?>">Trash</a>
+        
+        <form method="GET" style="float: right;">
+            <?php if ($status): ?>
+                <input type="hidden" name="status" value="<?= \App\Support\View::escape($status) ?>">
+            <?php endif; ?>
+            <input type="search" name="search" value="<?= \App\Support\View::escape($search) ?>" placeholder="Search posts...">
+            <button type="submit">Search Posts</button>
+        </form>
+    </div>
+
+    <table class="box" style="width: 100%; border-collapse: collapse; clear: both;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid #ccd0d4;">
+                <th style="padding: 10px;">Title</th>
+                <th style="padding: 10px;">Status</th>
+                <th style="padding: 10px;">Date</th>
+                <th style="padding: 10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($posts)): ?>
+                <tr><td colspan="4" style="padding: 10px;">No posts found.</td></tr>
+            <?php else: ?>
+                <?php foreach ($posts as $post): ?>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">
+                        <strong><a href="/admin/posts/<?= $post->id ?>/edit" style="color:#0073aa; text-decoration:none;"><?= \App\Support\View::escape($post->title) ?></a></strong>
+                    </td>
+                    <td style="padding: 10px;"><?= \App\Support\View::escape(ucfirst($post->status)) ?></td>
+                    <td style="padding: 10px;"><?= \App\Support\View::escape($post->created_at) ?></td>
+                    <td style="padding: 10px;">
+                        <?php if ($post->status !== 'trash'): ?>
+                            <a href="/admin/posts/<?= $post->id ?>/edit" style="color: #0073aa;">Edit</a> |
+                            <form method="POST" action="/admin/posts/<?= $post->id ?>/trash" style="display:inline;" onsubmit="return confirm('Move to trash?');">
+                                <?= \App\Support\Csrf::field() ?>
+                                <button type="submit" style="background:none;border:none;color:#a00;cursor:pointer;padding:0;">Trash</button>
+                            </form>
+                        <?php else: ?>
+                            <form method="POST" action="/admin/posts/<?= $post->id ?>/restore" style="display:inline;">
+                                <?= \App\Support\Csrf::field() ?>
+                                <button type="submit" style="background:none;border:none;color:#0073aa;cursor:pointer;padding:0;">Restore</button>
+                            </form> |
+                            <form method="POST" action="/admin/posts/<?= $post->id ?>/delete" style="display:inline;" onsubmit="return confirm('Delete permanently?');">
+                                <?= \App\Support\Csrf::field() ?>
+                                <button type="submit" style="background:none;border:none;color:#a00;cursor:pointer;padding:0;">Delete Permanently</button>
+                            </form>
+                        <?php endif; ?>
                     </td>
                 </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+
+    <div class="pagination" style="margin-top: 15px; text-align: right;">
+        <?php if ($paginator['page'] > 1): ?>
+            <a href="?page=<?= $paginator['page'] - 1 ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>">&laquo; Previous</a>
+        <?php endif; ?>
+        <span>Page <?= $paginator['page'] ?> of <?= $paginator['last_page'] ?: 1 ?></span>
+        <?php if ($paginator['page'] < $paginator['last_page']): ?>
+            <a href="?page=<?= $paginator['page'] + 1 ?>&search=<?= urlencode($search) ?>&status=<?= urlencode($status) ?>">Next &raquo;</a>
+        <?php endif; ?>
+    </div>
 </div>
-<?php $end(); ?>

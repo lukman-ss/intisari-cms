@@ -1,0 +1,8 @@
+{
+    "name": "Hello Dolly",
+    "slug": "hello-dolly",
+    "version": "1.0.0",
+    "author": "Intisari CMS",
+    "description": "This is not just a plugin, it symbolizes the hope and enthusiasm of an entire generation summed up in two words sung most famously by Louis Armstrong: Hello, Dolly.",
+    "entry": "plugin.php"
+}
