@@ -1,0 +1,9 @@
+/vendor/
+/.env
+/database/cms.sqlite
+/storage/sessions/*
+!/storage/sessions/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+/.phpunit.result.cache
+/.phpunit.cache/
