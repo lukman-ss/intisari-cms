@@ -4,107 +4,184 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
-use App\Auth\Auth;
-use App\Controllers\BaseController;
-use App\Models\Post;
-use Lukman\Http\RedirectResponse;
+use App\Auth\AuthManager;
+use App\Auth\Capability;
+use App\Auth\CapabilityChecker;
+use App\Repositories\PostRepository;
+use App\Support\Flash;
+use App\Support\PostStatus;
+use App\Support\PostType;
+use App\Support\Redirect;
+use App\Support\Slug;
+use App\Validation\PostValidator;
 use Lukman\Http\Request;
 use Lukman\Http\Response;
 
-final class PostController extends BaseController
+class PostController
 {
-    private function model(): Post
+    private PostRepository $repo;
+    private PostValidator $validator;
+
+    public function __construct()
     {
-        return new Post($this->app->db());
+        $this->repo = new PostRepository();
+        $this->validator = new PostValidator();
     }
 
-    private function flashError(): ?string
+    public function index(Request $request): string|Response
     {
-        $session = $this->app->session();
-        return $session->started() ? $session->get('_flash_error') : null;
-    }
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_POSTS)) {
+            Flash::set('error', 'You do not have permission to manage posts.');
+            return Redirect::to('/admin/dashboard');
+        }
 
-    public function index(Request $request): Response
-    {
-        $html = $this->app->render('admin.posts.index', [
-            'authUser' => Auth::user(),
-            'posts'    => $this->model()->all(),
-            'appName'  => $this->appName(),
+        $page = (int)($_GET['page'] ?? 1);
+        $search = $_GET['search'] ?? '';
+        $status = $_GET['status'] ?? '';
+
+        $paginator = $this->repo->paginate(PostType::POST, $page, 20, (string)$search, (string)$status);
+
+        $content = app()->render('admin/posts/index', [
+            'posts' => $paginator['data'],
+            'search' => $search,
+            'status' => $status,
+            'paginator' => $paginator,
         ]);
 
-        return new Response($html);
+        return app()->render('layouts/admin', [
+            'title' => 'Posts',
+            'content' => $content
+        ]);
     }
 
-    public function create(Request $request): Response
+    public function create(): string|Response
     {
-        $html = $this->app->render('admin.posts.create', [
-            'authUser' => Auth::user(),
-            'error'    => $this->flashError(),
-            'appName'  => $this->appName(),
-        ]);
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_POSTS)) {
+            Flash::set('error', 'You do not have permission to create posts.');
+            return Redirect::to('/admin/dashboard');
+        }
 
-        return new Response($html);
+        $content = app()->render('admin/posts/create');
+        return app()->render('layouts/admin', [
+            'title' => 'Add New Post',
+            'content' => $content
+        ]);
     }
 
     public function store(Request $request): Response
     {
-        $data    = $request->only(['title', 'slug', 'excerpt', 'content', 'status']);
-        $session = $this->app->session();
-
-        try {
-            $this->app->validate($data, [
-                'title' => 'required',
-                'slug'  => 'required',
-            ]);
-        } catch (\Lukman\Validation\Exception\ValidationException $e) {
-            if ($session->started()) {
-                $session->flash('_flash_error', implode(', ', $e->errors()->all()));
-            }
-            return new RedirectResponse('/admin/posts/create');
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_POSTS)) {
+            return Redirect::to('/admin/dashboard');
         }
 
-        $data['author_id'] = Auth::id() ?? 0;
-        $data['status']    = $data['status'] !== '' ? $data['status'] : 'draft';
+        $data = $_POST;
+        $data['type'] = PostType::POST;
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $data['slug'] = Slug::generate($data['title']);
+        }
 
-        $this->model()->create($data);
+        $user = AuthManager::guard()->user();
+        $data['author_id'] = $user['id'] ?? 1;
 
-        return new RedirectResponse('/admin/posts');
+        if (isset($data['status']) && $data['status'] === PostStatus::PUBLISHED) {
+            $data['published_at'] = date('Y-m-d H:i:s');
+        }
+
+        $errors = $this->validator->validate($data);
+
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back('/admin/posts/create');
+        }
+
+        $this->repo->create($data);
+        Flash::set('success', 'Post created successfully.');
+        return Redirect::to('/admin/posts');
     }
 
-    public function edit(Request $request, string $id): Response
+    public function edit(Request $request, string $id): string|Response
     {
-        $post = $this->model()->find((int) $id);
-
-        if ($post === null) {
-            return new Response('Post not found.', 404);
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_POSTS)) {
+            return Redirect::to('/admin/dashboard');
         }
 
-        $html = $this->app->render('admin.posts.edit', [
-            'authUser' => Auth::user(),
-            'post'     => $post,
-            'error'    => $this->flashError(),
-            'appName'  => $this->appName(),
-        ]);
+        $post = $this->repo->find((int)$id);
+        if (!$post || $post->type !== PostType::POST) {
+            Flash::set('error', 'Post not found.');
+            return Redirect::to('/admin/posts');
+        }
 
-        return new Response($html);
+        $content = app()->render('admin/posts/edit', ['post' => $post]);
+        return app()->render('layouts/admin', [
+            'title' => 'Edit Post',
+            'content' => $content
+        ]);
     }
 
     public function update(Request $request, string $id): Response
     {
-        $data = array_filter(
-            $request->only(['title', 'slug', 'excerpt', 'content', 'status']),
-            fn ($v) => $v !== null && $v !== ''
-        );
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_POSTS)) {
+            return Redirect::to('/admin/dashboard');
+        }
 
-        $this->model()->update((int) $id, $data);
+        $post = $this->repo->find((int)$id);
+        if (!$post || $post->type !== PostType::POST) {
+            return Redirect::to('/admin/posts');
+        }
 
-        return new RedirectResponse('/admin/posts');
+        $data = $_POST;
+        $data['type'] = PostType::POST;
+        if (empty($data['slug']) && !empty($data['title'])) {
+            $data['slug'] = Slug::generate($data['title']);
+        }
+
+        if (isset($data['status']) && $data['status'] === PostStatus::PUBLISHED && empty($post->published_at)) {
+            $data['published_at'] = date('Y-m-d H:i:s');
+        }
+
+        $errors = $this->validator->validate($data, (int)$id);
+
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back("/admin/posts/{$id}/edit");
+        }
+
+        $this->repo->update((int)$id, $data);
+        Flash::set('success', 'Post updated successfully.');
+        return Redirect::to("/admin/posts/{$id}/edit");
+    }
+
+    public function trash(Request $request, string $id): Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::DELETE_POSTS)) {
+            Flash::set('error', 'Permission denied.');
+            return Redirect::to('/admin/posts');
+        }
+
+        $this->repo->trash((int)$id);
+        Flash::set('success', 'Post moved to trash.');
+        return Redirect::to('/admin/posts');
+    }
+
+    public function restore(Request $request, string $id): Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::DELETE_POSTS)) {
+            return Redirect::to('/admin/posts');
+        }
+
+        $this->repo->update((int)$id, ['status' => PostStatus::DRAFT]);
+        Flash::set('success', 'Post restored from trash.');
+        return Redirect::to('/admin/posts');
     }
 
     public function destroy(Request $request, string $id): Response
     {
-        $this->model()->delete((int) $id);
+        if (!CapabilityChecker::checkCurrentUser(Capability::DELETE_POSTS)) {
+            return Redirect::to('/admin/posts');
+        }
 
-        return new RedirectResponse('/admin/posts');
+        $this->repo->delete((int)$id);
+        Flash::set('success', 'Post deleted permanently.');
+        return Redirect::to('/admin/posts?status=trash');
     }
 }

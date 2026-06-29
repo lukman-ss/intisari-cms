@@ -4,105 +4,129 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
-use App\Auth\Auth;
-use App\Controllers\BaseController;
-use App\Models\User;
-use Lukman\Http\RedirectResponse;
+use App\Auth\AuthManager;
+use App\Auth\PasswordHasher;
+use App\Repositories\UserRepository;
+use App\Support\Flash;
+use App\Support\Redirect;
+use App\Validation\UserValidator;
 use Lukman\Http\Request;
 use Lukman\Http\Response;
 
-final class UserController extends BaseController
+class UserController
 {
-    private function model(): User
+    private UserRepository $repo;
+    private UserValidator $validator;
+
+    public function __construct()
     {
-        return new User($this->app->db());
+        $this->repo = new UserRepository();
+        $this->validator = new UserValidator();
     }
 
-    private function flashError(): ?string
+    public function index(Request $request): string|Response
     {
-        $session = $this->app->session();
-        return $session->started() ? $session->get('_flash_error') : null;
-    }
+        $page = (int)($_GET['page'] ?? 1);
+        $search = $_GET['search'] ?? '';
+        
+        $paginator = $this->repo->paginate($page, 20, (string)$search);
 
-    public function index(Request $request): Response
-    {
-        $html = $this->app->render('admin.users.index', [
-            'authUser' => Auth::user(),
-            'users'    => $this->model()->all(),
-            'appName'  => $this->appName(),
+        $content = app()->render('admin/users/index', [
+            'users' => $paginator['data'],
+            'search' => $search,
+            'paginator' => $paginator,
         ]);
 
-        return new Response($html);
+        return app()->render('layouts/admin', [
+            'title' => 'Users',
+            'content' => $content
+        ]);
     }
 
-    public function create(Request $request): Response
+    public function create(): string|Response
     {
-        $html = $this->app->render('admin.users.create', [
-            'authUser' => Auth::user(),
-            'error'    => $this->flashError(),
-            'appName'  => $this->appName(),
+        $content = app()->render('admin/users/create');
+        return app()->render('layouts/admin', [
+            'title' => 'Add New User',
+            'content' => $content
         ]);
-
-        return new Response($html);
     }
 
     public function store(Request $request): Response
     {
-        $data    = $request->only(['name', 'email', 'password']);
-        $session = $this->app->session();
+        $data = $_POST;
+        $errors = $this->validator->validate($data);
 
-        try {
-            $this->app->validate($data, [
-                'name'     => 'required',
-                'email'    => 'required',
-                'password' => 'required',
-            ]);
-        } catch (\Lukman\Validation\Exception\ValidationException $e) {
-            if ($session->started()) {
-                $session->flash('_flash_error', implode(', ', $e->errors()->all()));
-            }
-            return new RedirectResponse('/admin/users/create');
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back('/admin/users/create');
         }
 
-        $this->model()->create($data);
+        $hasher = new PasswordHasher();
+        $data['password'] = $hasher->make($data['password']);
 
-        return new RedirectResponse('/admin/users');
+        $this->repo->create($data);
+        Flash::set('success', 'User created successfully.');
+        return Redirect::to('/admin/users');
     }
 
-    public function edit(Request $request, string $id): Response
+    public function edit(Request $request, string $id): string|Response
     {
-        $user = $this->model()->find((int) $id);
-
-        if ($user === null) {
-            return new Response('User not found.', 404);
+        $user = $this->repo->find((int)$id);
+        if (!$user) {
+            Flash::set('error', 'User not found.');
+            return Redirect::to('/admin/users');
         }
 
-        $html = $this->app->render('admin.users.edit', [
-            'authUser' => Auth::user(),
-            'editUser' => $user,
-            'error'    => $this->flashError(),
-            'appName'  => $this->appName(),
+        $content = app()->render('admin/users/edit', ['user' => $user]);
+        return app()->render('layouts/admin', [
+            'title' => 'Edit User',
+            'content' => $content
         ]);
-
-        return new Response($html);
     }
 
     public function update(Request $request, string $id): Response
     {
-        $data = array_filter(
-            $request->only(['name', 'email', 'password']),
-            fn ($v) => $v !== null && $v !== ''
-        );
+        $user = $this->repo->find((int)$id);
+        if (!$user) {
+            return Redirect::to('/admin/users');
+        }
 
-        $this->model()->update((int) $id, $data);
+        $data = $_POST;
+        $errors = $this->validator->validate($data, (int)$id);
 
-        return new RedirectResponse('/admin/users');
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back("/admin/users/{$id}/edit");
+        }
+
+        if (!empty($data['password'])) {
+            $hasher = new PasswordHasher();
+            $data['password'] = $hasher->make($data['password']);
+        } else {
+            unset($data['password']);
+        }
+
+        $this->repo->update((int)$id, $data);
+        Flash::set('success', 'User updated successfully.');
+        return Redirect::to("/admin/users/{$id}/edit");
     }
 
     public function destroy(Request $request, string $id): Response
     {
-        $this->model()->delete((int) $id);
+        $currentUser = AuthManager::guard()->user();
+        if ($currentUser && (int)$currentUser['id'] === (int)$id) {
+            Flash::set('error', 'You cannot delete yourself.');
+            return Redirect::to('/admin/users');
+        }
 
-        return new RedirectResponse('/admin/users');
+        if ($this->repo->countAdmins() <= 1) {
+            Flash::set('error', 'Cannot delete the last administrator.');
+            return Redirect::to('/admin/users');
+        }
+
+        $this->repo->delete((int)$id);
+        Flash::set('success', 'User deleted.');
+        return Redirect::to('/admin/users');
     }
 }

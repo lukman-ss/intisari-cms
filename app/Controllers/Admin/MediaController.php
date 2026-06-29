@@ -4,45 +4,171 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
-use App\Auth\Auth;
-use App\Controllers\BaseController;
-use App\Models\Media;
-use Lukman\Http\RedirectResponse;
+use App\Auth\AuthManager;
+use App\Auth\Capability;
+use App\Auth\CapabilityChecker;
+use App\Repositories\MediaRepository;
+use App\Services\MediaUploadService;
+use App\Support\Flash;
+use App\Support\Redirect;
+use App\Validation\MediaValidator;
 use Lukman\Http\Request;
 use Lukman\Http\Response;
 
-final class MediaController extends BaseController
+class MediaController
 {
-    private function model(): Media
+    private MediaRepository $repo;
+    private MediaUploadService $uploadService;
+    private MediaValidator $validator;
+
+    public function __construct()
     {
-        return new Media($this->app->db());
+        $this->repo = new MediaRepository();
+        $this->uploadService = new MediaUploadService();
+        $this->validator = new MediaValidator();
     }
 
-    public function index(Request $request): Response
+    public function index(Request $request): string|Response
     {
-        $html = $this->app->render('admin.media.index', [
-            'authUser' => Auth::user(),
-            'media'    => $this->model()->all(),
-            'appName'  => $this->appName(),
+        if (!CapabilityChecker::checkCurrentUser(Capability::UPLOAD_FILES)) {
+            Flash::set('error', 'You do not have permission to manage media.');
+            return Redirect::to('/admin/dashboard');
+        }
+
+        $page = (int)($_GET['page'] ?? 1);
+        $search = $_GET['search'] ?? '';
+        $mime = $_GET['mime'] ?? '';
+
+        $paginator = $this->repo->paginate($page, 20, (string)$search, (string)$mime);
+
+        $content = app()->render('admin/media/index', [
+            'media' => $paginator['data'],
+            'search' => $search,
+            'mime' => $mime,
+            'paginator' => $paginator,
         ]);
 
-        return new Response($html);
+        return app()->render('layouts/admin', [
+            'title' => 'Media Library',
+            'content' => $content
+        ]);
+    }
+
+    public function upload(): string|Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::UPLOAD_FILES)) {
+            return Redirect::to('/admin/dashboard');
+        }
+
+        $content = app()->render('admin/media/upload');
+        return app()->render('layouts/admin', [
+            'title' => 'Upload Media',
+            'content' => $content
+        ]);
     }
 
     public function store(Request $request): Response
     {
-        $data                = $request->only(['filename', 'path', 'mime_type', 'size']);
-        $data['uploader_id'] = Auth::id() ?? 0;
+        if (!CapabilityChecker::checkCurrentUser(Capability::UPLOAD_FILES)) {
+            return Redirect::to('/admin/dashboard');
+        }
 
-        $this->model()->create($data);
+        if (empty($_FILES['file'])) {
+            Flash::set('error', 'No file uploaded.');
+            return Redirect::back('/admin/media/upload');
+        }
 
-        return new RedirectResponse('/admin/media');
+        $file = $_FILES['file'];
+        $errors = $this->validator->validateUpload($file);
+
+        if (!empty($errors)) {
+            Flash::set('error', implode(' ', $errors));
+            return Redirect::back('/admin/media/upload');
+        }
+
+        try {
+            $uploadData = $this->uploadService->upload($file);
+            $user = AuthManager::guard()->user();
+            
+            $metadata = [
+                'title' => pathinfo($file['name'], PATHINFO_FILENAME),
+                'alt' => '',
+                'caption' => '',
+                'description' => ''
+            ];
+
+            $this->repo->create([
+                'user_id' => $user['id'] ?? 1,
+                'filename' => $uploadData['filename'],
+                'mime_type' => $uploadData['mime_type'],
+                'size' => $uploadData['size'],
+                'metadata' => json_encode($metadata)
+            ]);
+
+            Flash::set('success', 'File uploaded successfully.');
+        } catch (\Exception $e) {
+            Flash::set('error', $e->getMessage());
+        }
+
+        return Redirect::to('/admin/media');
+    }
+
+    public function edit(Request $request, string $id): string|Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::UPLOAD_FILES)) {
+            return Redirect::to('/admin/dashboard');
+        }
+
+        $media = $this->repo->find((int)$id);
+        if (!$media) {
+            Flash::set('error', 'Media not found.');
+            return Redirect::to('/admin/media');
+        }
+
+        $media['metadata_decoded'] = json_decode($media['metadata'] ?? '{}', true) ?: [];
+
+        $content = app()->render('admin/media/edit', ['media' => $media]);
+        return app()->render('layouts/admin', [
+            'title' => 'Edit Media',
+            'content' => $content
+        ]);
+    }
+
+    public function update(Request $request, string $id): Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::UPLOAD_FILES)) {
+            return Redirect::to('/admin/dashboard');
+        }
+
+        $media = $this->repo->find((int)$id);
+        if (!$media) {
+            return Redirect::to('/admin/media');
+        }
+
+        $metadata = json_decode($media['metadata'] ?? '{}', true) ?: [];
+        $metadata['title'] = $_POST['title'] ?? $metadata['title'] ?? '';
+        $metadata['alt'] = $_POST['alt'] ?? $metadata['alt'] ?? '';
+        $metadata['caption'] = $_POST['caption'] ?? $metadata['caption'] ?? '';
+        $metadata['description'] = $_POST['description'] ?? $metadata['description'] ?? '';
+
+        $this->repo->update((int)$id, ['metadata' => json_encode($metadata)]);
+        Flash::set('success', 'Media updated successfully.');
+        return Redirect::to("/admin/media/{$id}/edit");
     }
 
     public function destroy(Request $request, string $id): Response
     {
-        $this->model()->delete((int) $id);
+        if (!CapabilityChecker::checkCurrentUser(Capability::UPLOAD_FILES)) {
+            return Redirect::to('/admin/dashboard');
+        }
 
-        return new RedirectResponse('/admin/media');
+        $media = $this->repo->find((int)$id);
+        if ($media) {
+            $this->uploadService->deleteFile($media['filename']);
+            $this->repo->delete((int)$id);
+            Flash::set('success', 'Media deleted.');
+        }
+        
+        return Redirect::to('/admin/media');
     }
 }

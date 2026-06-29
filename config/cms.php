@@ -2,11 +2,16 @@
 
 declare(strict_types=1);
 
-$env = static fn (string $key, mixed $default = null): mixed => $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?: $default;
+$env = function_exists('env') ? 'env' : function ($key, $default = null) {
+    $val = getenv($key);
+    return $val !== false ? $val : $default;
+};
 
 return [
-    'title'       => $env('CMS_TITLE', 'Intisari CMS'),
-    'description' => $env('CMS_DESCRIPTION', 'A minimal CMS powered by IntisariPHP.'),
-    'per_page'    => (int) $env('CMS_PER_PAGE', 15),
-    'upload_path' => $env('CMS_UPLOAD_PATH', 'storage/uploads'),
+    'admin_path' => $env('CMS_ADMIN_PATH', 'admin'),
+    'site_name' => $env('CMS_SITE_NAME', 'Intisari CMS'),
+    'pagination_limit' => (int)$env('CMS_ITEMS_PER_PAGE', 20),
+    'homepage_mode' => 'posts', // 'posts' or 'page'
+    'posts_per_page' => 10,
+    'default_post_status' => 'draft',
 ];

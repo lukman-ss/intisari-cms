@@ -4,63 +4,35 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Lukman\Database\Connection;
-use Lukman\Database\QueryBuilder;
-
-final class Post
+class Post
 {
-    public function __construct(private readonly Connection $db)
+    public int $id;
+    public int $author_id;
+    public string $type = 'post';
+    public string $title = '';
+    public string $slug = '';
+    public ?string $excerpt = null;
+    public ?string $content = null;
+    public string $status = 'draft';
+    public int $parent_id = 0;
+    public int $menu_order = 0;
+    public string $comment_status = 'open';
+    public ?string $published_at = null;
+    public string $created_at;
+    public string $updated_at;
+    public ?string $deleted_at = null;
+
+    public function __construct(array $attributes = [])
     {
+        foreach ($attributes as $key => $value) {
+            if (property_exists($this, $key)) {
+                $this->$key = $value;
+            }
+        }
     }
 
-    private function query(): QueryBuilder
+    public function toArray(): array
     {
-        return (new QueryBuilder($this->db))->table('posts');
-    }
-
-    /** @return array<string, mixed>|null */
-    public function find(int $id): ?array
-    {
-        return $this->query()->where('id', $id)->first();
-    }
-
-    /** @return array<string, mixed>|null */
-    public function findBySlug(string $slug): ?array
-    {
-        return $this->query()->where('slug', $slug)->first();
-    }
-
-    /** @return list<array<string, mixed>> */
-    public function all(): array
-    {
-        return $this->query()->orderBy('created_at', 'desc')->get();
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    public function create(array $data): array
-    {
-        $data['created_at'] = $data['created_at'] ?? date('Y-m-d H:i:s');
-        $data['updated_at'] = $data['updated_at'] ?? date('Y-m-d H:i:s');
-        $id = (int) $this->query()->insertGetId($data);
-
-        return $this->find($id) ?? [];
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    public function update(int $id, array $data): int
-    {
-        $data['updated_at'] = date('Y-m-d H:i:s');
-
-        return $this->query()->where('id', $id)->update($data);
-    }
-
-    public function delete(int $id): int
-    {
-        return $this->query()->where('id', $id)->delete();
+        return get_object_vars($this);
     }
 }

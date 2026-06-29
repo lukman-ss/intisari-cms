@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-$app = require dirname(__DIR__) . '/bootstrap/app.php';
+/** @var \Intisari\Application $app */
+$app = require __DIR__ . '/../bootstrap/app.php';
 
-$app->loadRoutes(dirname(__DIR__) . '/routes/web.php');
+$app->loadRoutes($app->routesPath('web.php'));
 
 $app->run();

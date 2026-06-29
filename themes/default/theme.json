@@ -1,0 +1,8 @@
+{
+    "name": "Intisari Default",
+    "slug": "default",
+    "version": "1.0.0",
+    "author": "Intisari CMS",
+    "description": "The default theme for Intisari CMS.",
+    "supports": ["menus", "widgets", "thumbnails"]
+}

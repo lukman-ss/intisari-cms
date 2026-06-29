@@ -1,30 +1,53 @@
-<?php $extend('layout.admin'); ?>
-<?php $start('slot'); ?>
-<h1>Users</h1>
-<p style="margin-bottom:1rem"><a href="/admin/users/create" class="btn btn-primary btn-sm">+ New User</a></p>
-<div class="card">
-    <?php if (empty($users)): ?>
-        <p style="color:#888">No users yet.</p>
-    <?php else: ?>
-        <table>
-            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Created</th><th>Actions</th></tr></thead>
-            <tbody>
-            <?php foreach ($users as $u): ?>
-                <tr>
-                    <td><?= (int) $u['id'] ?></td>
-                    <td><?= htmlspecialchars($u['name']) ?></td>
-                    <td><?= htmlspecialchars($u['email']) ?></td>
-                    <td><?= htmlspecialchars($u['created_at'] ?? '') ?></td>
-                    <td>
-                        <a href="/admin/users/<?= (int) $u['id'] ?>" class="btn btn-primary btn-sm">Edit</a>
-                        <form action="/admin/users/<?= (int) $u['id'] ?>/delete" method="POST" style="display:inline">
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete this user?')">Delete</button>
+<?php declare(strict_types=1); ?>
+<div class="wrap">
+    <h1 style="display:inline-block; margin-right: 15px;">Users</h1>
+    <a href="/admin/users/create" style="padding:4px 8px; border:1px solid #0073aa; text-decoration:none; color:#0073aa; border-radius:3px;">Add New</a>
+
+    <form method="GET" style="float: right; margin-bottom: 10px;">
+        <input type="search" name="search" value="<?= \App\Support\View::escape($search) ?>" placeholder="Search users...">
+        <button type="submit">Search Users</button>
+    </form>
+
+    <table class="box" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+            <tr style="text-align: left; border-bottom: 1px solid #ccd0d4;">
+                <th style="padding: 10px;">Username</th>
+                <th style="padding: 10px;">Email</th>
+                <th style="padding: 10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($users)): ?>
+                <tr><td colspan="3" style="padding: 10px;">No users found.</td></tr>
+            <?php else: ?>
+                <?php foreach ($users as $u): ?>
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px;">
+                        <strong><?= \App\Support\View::escape($u['username']) ?></strong>
+                    </td>
+                    <td style="padding: 10px;">
+                        <a href="mailto:<?= \App\Support\View::escape($u['email']) ?>"><?= \App\Support\View::escape($u['email']) ?></a>
+                    </td>
+                    <td style="padding: 10px;">
+                        <a href="/admin/users/<?= $u['id'] ?>/edit" style="color: #0073aa;">Edit</a> |
+                        <form method="POST" action="/admin/users/<?= $u['id'] ?>/delete" style="display:inline;" onsubmit="return confirm('Are you sure?');">
+                            <?= \App\Support\Csrf::field() ?>
+                            <button type="submit" style="background:none;border:none;color:#a00;cursor:pointer;padding:0;">Delete</button>
                         </form>
                     </td>
                 </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+
+    <div class="pagination" style="margin-top: 15px; text-align: right;">
+        <?php if ($paginator['page'] > 1): ?>
+            <a href="?page=<?= $paginator['page'] - 1 ?>&search=<?= urlencode($search) ?>">&laquo; Previous</a>
+        <?php endif; ?>
+        <span>Page <?= $paginator['page'] ?> of <?= $paginator['last_page'] ?: 1 ?></span>
+        <?php if ($paginator['page'] < $paginator['last_page']): ?>
+            <a href="?page=<?= $paginator['page'] + 1 ?>&search=<?= urlencode($search) ?>">Next &raquo;</a>
+        <?php endif; ?>
+    </div>
 </div>
-<?php $end(); ?>

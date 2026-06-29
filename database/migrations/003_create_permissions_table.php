@@ -1,22 +1,16 @@
 <?php
-
 declare(strict_types=1);
-
-use Lukman\Database\Schema\SchemaBuilder;
-
 return new class {
-    public function up(SchemaBuilder $schema): void
-    {
-        if ($schema->hasTable('permissions')) {
-            return;
-        }
-
-        $schema->create('permissions', function ($table): void {
-            $table->id();
-            $table->string('name');
-            $table->string('slug');
-            $table->string('created_at')->nullable()->default(null);
-            $table->string('updated_at')->nullable()->default(null);
-        });
+    public function up(): string {
+        return "CREATE TABLE IF NOT EXISTS permissions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name VARCHAR(50) NOT NULL UNIQUE,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS permission_role (
+            permission_id INTEGER NOT NULL,
+            role_id INTEGER NOT NULL,
+            PRIMARY KEY (permission_id, role_id)
+        );";
     }
 };
