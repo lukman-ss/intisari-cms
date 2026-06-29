@@ -35,6 +35,7 @@
         }
     },
     "scripts": {
+        "source:check": "find app routes config database plugins themes resources tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l",
         "test": "phpunit",
         "console": "php intisari",
         "serve": "php intisari serve"
