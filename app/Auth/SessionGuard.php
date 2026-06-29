@@ -47,6 +47,12 @@ class SessionGuard
         $this->user = $user;
     }
 
+    public function loginUsingId(int $id): void
+    {
+        $_SESSION[$this->sessionKey] = $id;
+        $this->user = null;
+    }
+
     public function logout(): void
     {
         unset($_SESSION[$this->sessionKey]);

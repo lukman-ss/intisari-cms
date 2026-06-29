@@ -115,6 +115,10 @@ $app->get('/admin/plugins', [\App\Controllers\Admin\PluginController::class, 'in
 $app->post('/admin/plugins/{plugin}/activate', [\App\Controllers\Admin\PluginController::class, 'activate']);
 $app->post('/admin/plugins/{plugin}/deactivate', [\App\Controllers\Admin\PluginController::class, 'deactivate']);
 
+$app->get('/admin/tools/api-tokens', [\App\Controllers\Admin\ApiTokenController::class, 'index']);
+$app->post('/admin/tools/api-tokens', [\App\Controllers\Admin\ApiTokenController::class, 'store']);
+$app->post('/admin/tools/api-tokens/{id}/revoke', [\App\Controllers\Admin\ApiTokenController::class, 'revoke']);
+
 $app->get('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'index']);
 $app->post('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'store']);
 
