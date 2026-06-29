@@ -10,7 +10,14 @@ $app->get('/posts', [\App\Controllers\PostController::class, 'index']);
 $app->get('/api/v1', [\App\Controllers\Api\IndexController::class, 'index']);
 $app->get('/api/v1/posts', [\App\Controllers\Api\PostApiController::class, 'index']);
 $app->get('/api/v1/posts/{id}', [\App\Controllers\Api\PostApiController::class, 'show']);
+$app->post('/api/v1/posts', [\App\Controllers\Api\PostApiController::class, 'store']);
+$app->patch('/api/v1/posts/{id}', [\App\Controllers\Api\PostApiController::class, 'update']);
+$app->delete('/api/v1/posts/{id}', [\App\Controllers\Api\PostApiController::class, 'destroy']);
+
 $app->get('/api/v1/pages', [\App\Controllers\Api\PageApiController::class, 'index']);
+$app->post('/api/v1/pages', [\App\Controllers\Api\PageApiController::class, 'store']);
+$app->patch('/api/v1/pages/{id}', [\App\Controllers\Api\PageApiController::class, 'update']);
+$app->delete('/api/v1/pages/{id}', [\App\Controllers\Api\PageApiController::class, 'destroy']);
 $app->get('/api/v1/media', [\App\Controllers\Api\MediaApiController::class, 'index']);
 $app->get('/api/v1/categories', [\App\Controllers\Api\TermApiController::class, 'categories']);
 $app->get('/api/v1/tags', [\App\Controllers\Api\TermApiController::class, 'tags']);
