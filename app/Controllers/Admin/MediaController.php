@@ -171,4 +171,28 @@ class MediaController
         
         return Redirect::to('/admin/media');
     }
+
+    public function bulk(\Lukman\Http\Request $request): \Lukman\Http\Response
+    {
+        if (!\App\Auth\CapabilityChecker::checkCurrentUser(\App\Auth\Capability::UPLOAD_FILES)) {
+            \App\Support\Flash::set('error', 'Permission denied.');
+            return \App\Support\Redirect::to('/admin/media');
+        }
+
+        $action = $_POST['action'] ?? '';
+        $ids = $_POST['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            \App\Support\Flash::set('error', 'No media selected.');
+            return \App\Support\Redirect::to('/admin/media');
+        }
+
+        if ($action === 'delete') {
+            foreach ($ids as $id) {
+                $this->repo->delete((int)$id);
+            }
+            \App\Support\Flash::set('success', 'Bulk action completed.');
+        }
+        return \App\Support\Redirect::back('/admin/media');
+    }
 }

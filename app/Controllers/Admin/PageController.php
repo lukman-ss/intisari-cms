@@ -197,4 +197,35 @@ class PageController
         Flash::set('success', 'Page deleted permanently.');
         return Redirect::to('/admin/pages?status=trash');
     }
+
+    public function bulk(\Lukman\Http\Request $request): \Lukman\Http\Response
+    {
+        if (!\App\Auth\CapabilityChecker::checkCurrentUser(\App\Auth\Capability::DELETE_PAGES)) {
+            \App\Support\Flash::set('error', 'Permission denied.');
+            return \App\Support\Redirect::to('/admin/pages');
+        }
+
+        $action = $_POST['action'] ?? '';
+        $ids = $_POST['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            \App\Support\Flash::set('error', 'No pages selected.');
+            return \App\Support\Redirect::to('/admin/pages');
+        }
+
+        foreach ($ids as $id) {
+            $post = $this->repo->find((int)$id);
+            if ($post && $post->type === \App\Support\PostType::PAGE) {
+                if ($action === 'trash') {
+                    $this->repo->trash((int)$id);
+                } elseif ($action === 'restore') {
+                    $this->repo->update((int)$id, ['status' => \App\Support\PostStatus::DRAFT]);
+                } elseif ($action === 'delete') {
+                    $this->repo->delete((int)$id);
+                }
+            }
+        }
+        \App\Support\Flash::set('success', 'Bulk action completed.');
+        return \App\Support\Redirect::back('/admin/pages');
+    }
 }

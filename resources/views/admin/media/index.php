@@ -16,10 +16,19 @@
         <div style="clear:both;"></div>
     </div>
 
+        <form method="POST" action="/admin/media/bulk">
+        <?= \App\Support\Csrf::field() ?>
+        <div style="margin-bottom: 10px;">
+            <select name="action">
+                <option value="">Bulk Actions</option>
+                <option value="delete">Delete Permanently</option>
+            </select>
+            <button type="submit" class="button" onclick="return confirm('Are you sure you want to perform this bulk action?');">Apply</button>
+        </div>
     <table class="box" style="width: 100%; border-collapse: collapse; clear: both;">
         <thead>
             <tr style="text-align: left; border-bottom: 1px solid #ccd0d4;">
-                <th style="padding: 10px; width: 60px;">File</th>
+                <th style="padding: 10px; width: 30px;"><input type="checkbox" onclick="let checkboxes = document.querySelectorAll('input[name=\'ids[]\']'); for(let cb of checkboxes) { cb.checked = this.checked; }"></th><th style="padding: 10px; width: 60px;">File</th>
                 <th style="padding: 10px;">Title</th>
                 <th style="padding: 10px;">MIME</th>
                 <th style="padding: 10px;">Size</th>
@@ -29,12 +38,12 @@
         </thead>
         <tbody>
             <?php if (empty($media)): ?>
-                <tr><td colspan="6" style="padding: 10px;">No media found.</td></tr>
+                <tr><td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $item['id'] ?? $item['id'] ?>"></td><td colspan="6" style="padding: 10px;">No media found.</td></tr>
             <?php else: ?>
                 <?php foreach ($media as $item): ?>
                 <?php $meta = json_decode($item['metadata'] ?? '{}', true) ?: []; ?>
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px;">
+                    <td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $item['id'] ?? $item['id'] ?>"></td><td style="padding: 10px;">
                         <?php if (str_starts_with($item['mime_type'], 'image/')): ?>
                             <img src="/storage/uploads/<?= \App\Support\View::escape($item['filename']) ?>" width="50" height="50" style="object-fit:cover;">
                         <?php else: ?>
@@ -60,6 +69,7 @@
             <?php endif; ?>
         </tbody>
     </table>
+    </form>
 
     <div class="pagination" style="margin-top: 15px; text-align: right;">
         <?php if ($paginator['page'] > 1): ?>

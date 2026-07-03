@@ -10,7 +10,14 @@ $app->get('/posts', [\App\Controllers\PostController::class, 'index']);
 $app->get('/api/v1', [\App\Controllers\Api\IndexController::class, 'index']);
 $app->get('/api/v1/posts', [\App\Controllers\Api\PostApiController::class, 'index']);
 $app->get('/api/v1/posts/{id}', [\App\Controllers\Api\PostApiController::class, 'show']);
+$app->post('/api/v1/posts', [\App\Controllers\Api\PostApiController::class, 'store']);
+$app->patch('/api/v1/posts/{id}', [\App\Controllers\Api\PostApiController::class, 'update']);
+$app->delete('/api/v1/posts/{id}', [\App\Controllers\Api\PostApiController::class, 'destroy']);
+
 $app->get('/api/v1/pages', [\App\Controllers\Api\PageApiController::class, 'index']);
+$app->post('/api/v1/pages', [\App\Controllers\Api\PageApiController::class, 'store']);
+$app->patch('/api/v1/pages/{id}', [\App\Controllers\Api\PageApiController::class, 'update']);
+$app->delete('/api/v1/pages/{id}', [\App\Controllers\Api\PageApiController::class, 'destroy']);
 $app->get('/api/v1/media', [\App\Controllers\Api\MediaApiController::class, 'index']);
 $app->get('/api/v1/categories', [\App\Controllers\Api\TermApiController::class, 'categories']);
 $app->get('/api/v1/tags', [\App\Controllers\Api\TermApiController::class, 'tags']);
@@ -115,8 +122,29 @@ $app->get('/admin/plugins', [\App\Controllers\Admin\PluginController::class, 'in
 $app->post('/admin/plugins/{plugin}/activate', [\App\Controllers\Admin\PluginController::class, 'activate']);
 $app->post('/admin/plugins/{plugin}/deactivate', [\App\Controllers\Admin\PluginController::class, 'deactivate']);
 
+$app->get('/admin/tools/api-tokens', [\App\Controllers\Admin\ApiTokenController::class, 'index']);
+$app->post('/admin/tools/api-tokens', [\App\Controllers\Admin\ApiTokenController::class, 'store']);
+$app->post('/admin/tools/api-tokens/{id}/revoke', [\App\Controllers\Admin\ApiTokenController::class, 'revoke']);
+
 $app->get('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'index']);
 $app->post('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'store']);
+
+// Bulk routes
+$app->post('/admin/users/bulk', [\App\Controllers\Admin\UserController::class, 'bulk']);
+$app->post('/admin/posts/bulk', [\App\Controllers\Admin\PostController::class, 'bulk']);
+$app->post('/admin/pages/bulk', [\App\Controllers\Admin\PageController::class, 'bulk']);
+$app->post('/admin/media/bulk', [\App\Controllers\Admin\MediaController::class, 'bulk']);
+$app->post('/admin/comments/bulk', [\App\Controllers\Admin\CommentController::class, 'bulk']);
+
+// Revision routes
+$app->get('/admin/posts/{id}/revisions', [\App\Controllers\Admin\RevisionController::class, 'index']);
+$app->get('/admin/pages/{id}/revisions', [\App\Controllers\Admin\RevisionController::class, 'index']);
+$app->get('/admin/revisions/{id}', [\App\Controllers\Admin\RevisionController::class, 'show']);
+$app->post('/admin/revisions/{id}/restore', [\App\Controllers\Admin\RevisionController::class, 'restore']);
+
+// Autosave routes
+$app->post('/admin/posts/{id}/autosave', [\App\Controllers\Admin\PostController::class, 'autosave']);
+$app->post('/admin/pages/{id}/autosave', [\App\Controllers\Admin\PageController::class, 'autosave']);
 
 $app->get('/{p1}', [\App\Routing\ContentRouter::class, 'handle']);
 $app->get('/{p1}/{p2}', [\App\Routing\ContentRouter::class, 'handle']);

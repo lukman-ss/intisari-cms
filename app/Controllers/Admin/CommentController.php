@@ -24,19 +24,21 @@ class CommentController
     public function index(Request $request): string|Response
     {
         if (!CapabilityChecker::checkCurrentUser(Capability::MODERATE_COMMENTS)) {
-            Flash::set('error', 'You do not have permission to moderate comments.');
+            Flash::set('error', 'You do not have permission.');
             return Redirect::to('/admin/dashboard');
         }
 
         $page = (int)($_GET['page'] ?? 1);
         $status = $_GET['status'] ?? '';
+        $search = $_GET['search'] ?? '';
 
-        $paginator = $this->repo->paginateAdmin($page, 20, $status);
+        $paginator = $this->repo->paginateAdmin($page, 20, (string)$status, (string)$search);
 
         $content = app()->render('admin/comments/index', [
             'comments' => $paginator['data'],
             'status' => $status,
-            'paginator' => $paginator,
+            'search' => $search,
+            'paginator' => $paginator
         ]);
 
         return app()->render('layouts/admin', [
@@ -83,5 +85,35 @@ class CommentController
         $this->repo->delete((int)$id);
         Flash::set('success', 'Comment permanently deleted.');
         return Redirect::back('/admin/comments');
+    }
+
+    public function bulk(\Lukman\Http\Request $request): \Lukman\Http\Response
+    {
+        if (!\App\Auth\CapabilityChecker::checkCurrentUser(\App\Auth\Capability::MODERATE_COMMENTS)) {
+            \App\Support\Flash::set('error', 'Permission denied.');
+            return \App\Support\Redirect::to('/admin/comments');
+        }
+
+        $action = $_POST['action'] ?? '';
+        $ids = $_POST['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            \App\Support\Flash::set('error', 'No comments selected.');
+            return \App\Support\Redirect::to('/admin/comments');
+        }
+
+        foreach ($ids as $id) {
+            if ($action === 'approve') {
+                $this->repo->update((int)$id, ['status' => 'approved']);
+            } elseif ($action === 'spam') {
+                $this->repo->update((int)$id, ['status' => 'spam']);
+            } elseif ($action === 'trash') {
+                $this->repo->update((int)$id, ['status' => 'trash']);
+            } elseif ($action === 'delete') {
+                $this->repo->delete((int)$id);
+            }
+        }
+        \App\Support\Flash::set('success', 'Bulk action completed.');
+        return \App\Support\Redirect::back('/admin/comments');
     }
 }

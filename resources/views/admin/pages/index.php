@@ -18,10 +18,19 @@
         </form>
     </div>
 
+        <form method="POST" action="/admin/pages/bulk">
+        <?= \App\Support\Csrf::field() ?>
+        <div style="margin-bottom: 10px;">
+            <select name="action">
+                <option value="">Bulk Actions</option>
+                <option value="trash">Move to Trash</option><option value="restore">Restore</option><option value="delete">Delete Permanently</option>
+            </select>
+            <button type="submit" class="button" onclick="return confirm('Are you sure you want to perform this bulk action?');">Apply</button>
+        </div>
     <table class="box" style="width: 100%; border-collapse: collapse; clear: both;">
         <thead>
             <tr style="text-align: left; border-bottom: 1px solid #ccd0d4;">
-                <th style="padding: 10px;">Title</th>
+                <th style="padding: 10px; width: 30px;"><input type="checkbox" onclick="let checkboxes = document.querySelectorAll('input[name=\'ids[]\']'); for(let cb of checkboxes) { cb.checked = this.checked; }"></th><th style="padding: 10px;">Title</th>
                 <th style="padding: 10px;">Status</th>
                 <th style="padding: 10px;">Date</th>
                 <th style="padding: 10px;">Actions</th>
@@ -29,11 +38,11 @@
         </thead>
         <tbody>
             <?php if (empty($pages)): ?>
-                <tr><td colspan="4" style="padding: 10px;">No pages found.</td></tr>
+                <tr><td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $p->id ?>"></td><td colspan="4" style="padding: 10px;">No pages found.</td></tr>
             <?php else: ?>
                 <?php foreach ($pages as $p): ?>
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 10px;">
+                    <td style="padding: 10px;"><input type="checkbox" name="ids[]" value="<?= $p->id ?>"></td><td style="padding: 10px;">
                         <strong><a href="/admin/pages/<?= $p->id ?>/edit" style="color:#0073aa; text-decoration:none;"><?= \App\Support\View::escape($p->title) ?></a></strong>
                     </td>
                     <td style="padding: 10px;"><?= \App\Support\View::escape(ucfirst($p->status)) ?></td>
@@ -61,6 +70,7 @@
             <?php endif; ?>
         </tbody>
     </table>
+    </form>
 
     <div class="pagination" style="margin-top: 15px; text-align: right;">
         <?php if ($paginator['page'] > 1): ?>

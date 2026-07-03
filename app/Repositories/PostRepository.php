@@ -88,6 +88,8 @@ class PostRepository
 
     public function update(int $id, array $data): bool
     {
+        (new \App\Repositories\RevisionRepository())->createRevision($id);
+
         $fields = [];
         $values = [];
         foreach ($data as $key => $val) {
