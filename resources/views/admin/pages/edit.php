@@ -28,7 +28,77 @@
 
             <div style="margin-bottom: 15px;">
                 <label style="display:block; font-weight:bold; margin-bottom:5px;">Excerpt</label>
-                <textarea name="excerpt" style="width:100%; padding:10px; height:100px; box-sizing:border-box;"><?= \App\Support\View::escape($page->excerpt ?? '') ?></textarea>
+                <textarea name="excerpt" style="width:100%; padding:10px; height:100px; box-sizing:border-box;"
+                    placeholder="Short description (optional)..."><?= \App\Support\View::escape($page->excerpt ?? '') ?></textarea>
+            </div>
+
+            <?php
+            $seoData = !empty($page->seo_metadata) ? json_decode($page->seo_metadata, true) : [];
+            $seoTitle = $seoData['seo_title'] ?? '';
+            $seoDesc = $seoData['seo_description'] ?? '';
+            $seoKeywords = $seoData['seo_keywords'] ?? '';
+            $seoNoindex = !empty($seoData['seo_noindex']) ? 'checked' : '';
+            $seoNofollow = !empty($seoData['seo_nofollow']) ? 'checked' : '';
+            $seoCanonical = $seoData['seo_canonical'] ?? '';
+            $seoOgTitle = $seoData['seo_og_title'] ?? '';
+            $seoOgDesc = $seoData['seo_og_description'] ?? '';
+            $seoOgImage = $seoData['seo_og_image'] ?? '';
+            ?>
+            <!-- SEO Settings Box -->
+            <div class="box" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; background: #fff;">
+                <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px; color: #0073aa;">SEO Settings</h3>
+                
+                <div style="margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">General</h4>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">SEO Title</label>
+                        <input type="text" name="seo_title" value="<?= \App\Support\View::escape($seoTitle) ?>" style="width:100%; padding:8px; box-sizing:border-box;" placeholder="Custom SEO Title (Leave blank to use page title)">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">Meta Description</label>
+                        <textarea name="seo_description" style="width:100%; padding:8px; height:60px; box-sizing:border-box;" placeholder="Write a compelling meta description..."><?= \App\Support\View::escape($seoDesc) ?></textarea>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">Focus Keywords</label>
+                        <input type="text" name="seo_keywords" value="<?= \App\Support\View::escape($seoKeywords) ?>" style="width:100%; padding:8px; box-sizing:border-box;" placeholder="e.g. cms, tutorial, web development">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 15px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Advanced</h4>
+                    <div style="margin-bottom: 8px;">
+                        <label style="display:block; font-size: 13px;">
+                            <input type="checkbox" name="seo_noindex" value="1" <?= $seoNoindex ?>> 
+                            <strong>No Index</strong> (Prevent search engines from indexing this page)
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-size: 13px;">
+                            <input type="checkbox" name="seo_nofollow" value="1" <?= $seoNofollow ?>> 
+                            <strong>No Follow</strong> (Prevent search engines from following links on this page)
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">Canonical URL</label>
+                        <input type="url" name="seo_canonical" value="<?= \App\Support\View::escape($seoCanonical) ?>" style="width:100%; padding:8px; box-sizing:border-box;" placeholder="Leave blank to use default permalink">
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Social (Open Graph / Twitter)</h4>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">Social Title</label>
+                        <input type="text" name="seo_og_title" value="<?= \App\Support\View::escape($seoOgTitle) ?>" style="width:100%; padding:8px; box-sizing:border-box;" placeholder="Override title for Facebook/Twitter">
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">Social Description</label>
+                        <textarea name="seo_og_description" style="width:100%; padding:8px; height:60px; box-sizing:border-box;" placeholder="Override description for Facebook/Twitter"><?= \App\Support\View::escape($seoOgDesc) ?></textarea>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display:block; font-weight:bold; margin-bottom:5px;">Social Image URL</label>
+                        <input type="text" name="seo_og_image" value="<?= \App\Support\View::escape($seoOgImage) ?>" style="width:100%; padding:8px; box-sizing:border-box;" placeholder="Override image URL (Leave blank to use featured image)">
+                    </div>
+                </div>
             </div>
 
             <div style="font-size:12px; color:#888; margin-top:8px;">

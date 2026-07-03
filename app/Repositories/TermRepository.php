@@ -66,14 +66,15 @@ class TermRepository
     public function create(array $data): int
     {
         $stmt = $this->db->prepare("
-            INSERT INTO terms (name, slug, taxonomy, description) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO terms (name, slug, taxonomy, description, seo_metadata) 
+            VALUES (?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $data['name'],
             $data['slug'],
             $data['taxonomy'],
-            $data['description'] ?? ''
+            $data['description'] ?? '',
+            $data['seo_metadata'] ?? null
         ]);
         return (int)$this->db->lastInsertId();
     }
@@ -82,13 +83,14 @@ class TermRepository
     {
         $stmt = $this->db->prepare("
             UPDATE terms 
-            SET name = ?, slug = ?, description = ? 
+            SET name = ?, slug = ?, description = ?, seo_metadata = ?
             WHERE id = ?
         ");
         return $stmt->execute([
             $data['name'],
             $data['slug'],
             $data['description'] ?? '',
+            $data['seo_metadata'] ?? null,
             $id
         ]);
     }

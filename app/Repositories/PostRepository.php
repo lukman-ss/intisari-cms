@@ -124,4 +124,14 @@ class PostRepository
         $stmt = $this->db->prepare("DELETE FROM posts WHERE id = ?");
         return $stmt->execute([$id]);
     }
+
+    public function getPublishedPostsByType(string $type): array
+    {
+        $stmt = $this->db->prepare("SELECT slug, updated_at, created_at, seo_metadata 
+                                    FROM posts 
+                                    WHERE type = ? AND status = 'published' 
+                                    ORDER BY updated_at DESC");
+        $stmt->execute([$type]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

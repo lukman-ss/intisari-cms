@@ -100,8 +100,24 @@ class PageController
             return Redirect::back('/admin/pages/create');
         }
 
+        // Process SEO metadata
+        $seoData = [
+            'seo_title'       => $_POST['seo_title'] ?? '',
+            'seo_description' => $_POST['seo_description'] ?? '',
+            'seo_keywords'    => $_POST['seo_keywords'] ?? '',
+            'seo_noindex'     => isset($_POST['seo_noindex']) ? 1 : 0,
+            'seo_nofollow'    => isset($_POST['seo_nofollow']) ? 1 : 0,
+            'seo_canonical'   => trim($_POST['seo_canonical'] ?? ''),
+            'seo_og_title'    => $_POST['seo_og_title'] ?? '',
+            'seo_og_description' => $_POST['seo_og_description'] ?? '',
+            'seo_og_image'    => $_POST['seo_og_image'] ?? ''
+        ];
+        $data['seo_metadata'] = json_encode($seoData);
+
         // Clean up data for database insertion
         unset($data['csrf_token']);
+        foreach (array_keys($seoData) as $k) { unset($data[$k]); }
+        
         if (empty($data['featured_image_id'])) {
             $data['featured_image_id'] = null;
         }
@@ -166,8 +182,24 @@ class PageController
             return Redirect::back("/admin/pages/{$id}/edit");
         }
 
+        // Process SEO metadata
+        $seoData = [
+            'seo_title'       => $_POST['seo_title'] ?? '',
+            'seo_description' => $_POST['seo_description'] ?? '',
+            'seo_keywords'    => $_POST['seo_keywords'] ?? '',
+            'seo_noindex'     => isset($_POST['seo_noindex']) ? 1 : 0,
+            'seo_nofollow'    => isset($_POST['seo_nofollow']) ? 1 : 0,
+            'seo_canonical'   => trim($_POST['seo_canonical'] ?? ''),
+            'seo_og_title'    => $_POST['seo_og_title'] ?? '',
+            'seo_og_description' => $_POST['seo_og_description'] ?? '',
+            'seo_og_image'    => $_POST['seo_og_image'] ?? ''
+        ];
+        $data['seo_metadata'] = json_encode($seoData);
+
         // Clean up data for database update
         unset($data['csrf_token']);
+        foreach (array_keys($seoData) as $k) { unset($data[$k]); }
+        
         if (empty($data['featured_image_id'])) {
             $data['featured_image_id'] = null;
         }

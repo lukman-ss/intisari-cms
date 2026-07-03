@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../app/Helpers/plugin_helpers.php';
-require_once __DIR__ . '/../app/Support/helpers.php';
 
 use Intisari\Application;
 
@@ -13,6 +12,7 @@ $app->register(\App\Providers\AppServiceProvider::class);
 $app->middleware([
     \App\Security\SecurityHeaders::class,
     \App\Security\CsrfGuard::class,
+    \App\Security\SeoRedirectMiddleware::class,
 ]);
 
 if (is_file($app->basePath('.env'))) {

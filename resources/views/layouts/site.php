@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title><?= \App\Support\View::escape($title ?? 'Intisari CMS') ?></title>
+    <?= \App\Support\SeoGenerator::render($post ?? null, $title ?? 'Intisari CMS') ?>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 40px auto; line-height: 1.6; }
         header { border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }

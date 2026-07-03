@@ -82,6 +82,9 @@ function isActive(string $prefix, string $current): string {
             <li<?= isActive('/admin/settings', $currentPath) ?>>
                 <a href="/admin/settings/general">⚙️ Settings</a>
             </li>
+            <li<?= isActive('/admin/redirects', $currentPath) ?>>
+                <a href="/admin/redirects">🔄 SEO Redirects</a>
+            </li>
         </ul>
     </aside>
 

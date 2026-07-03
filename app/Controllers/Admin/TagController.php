@@ -61,6 +61,20 @@ class TagController
         $data['taxonomy'] = 'tag';
         $data['slug'] = empty($data['slug']) ? Slug::generate($data['name']) : Slug::generate($data['slug']);
 
+        $seoData = [
+            'seo_title'       => $_POST['seo_title'] ?? '',
+            'seo_description' => $_POST['seo_description'] ?? '',
+            'seo_keywords'    => $_POST['seo_keywords'] ?? '',
+            'seo_noindex'     => isset($_POST['seo_noindex']) ? 1 : 0,
+            'seo_nofollow'    => isset($_POST['seo_nofollow']) ? 1 : 0,
+            'seo_canonical'   => trim($_POST['seo_canonical'] ?? ''),
+            'seo_og_title'    => $_POST['seo_og_title'] ?? '',
+            'seo_og_description' => $_POST['seo_og_description'] ?? '',
+            'seo_og_image'    => $_POST['seo_og_image'] ?? ''
+        ];
+        $data['seo_metadata'] = json_encode($seoData);
+        foreach (array_keys($seoData) as $k) { unset($data[$k]); }
+
         $this->repo->create($data);
         Flash::set('success', 'Tag created successfully.');
         return Redirect::to('/admin/tags');
@@ -104,6 +118,20 @@ class TagController
 
         $data['slug'] = empty($data['slug']) ? Slug::generate($data['name']) : Slug::generate($data['slug']);
         
+        $seoData = [
+            'seo_title'       => $_POST['seo_title'] ?? '',
+            'seo_description' => $_POST['seo_description'] ?? '',
+            'seo_keywords'    => $_POST['seo_keywords'] ?? '',
+            'seo_noindex'     => isset($_POST['seo_noindex']) ? 1 : 0,
+            'seo_nofollow'    => isset($_POST['seo_nofollow']) ? 1 : 0,
+            'seo_canonical'   => trim($_POST['seo_canonical'] ?? ''),
+            'seo_og_title'    => $_POST['seo_og_title'] ?? '',
+            'seo_og_description' => $_POST['seo_og_description'] ?? '',
+            'seo_og_image'    => $_POST['seo_og_image'] ?? ''
+        ];
+        $data['seo_metadata'] = json_encode($seoData);
+        foreach (array_keys($seoData) as $k) { unset($data[$k]); }
+
         $this->repo->update((int)$id, $data);
         Flash::set('success', 'Tag updated successfully.');
         return Redirect::to("/admin/tags/{$id}/edit");

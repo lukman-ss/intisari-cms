@@ -5,6 +5,7 @@ declare(strict_types=1);
 /** @var \Intisari\Application $app */
 
 $app->get('/', [\App\Routing\ContentRouter::class, 'handle']);
+$app->get('/sitemap.xml', [\App\Controllers\Site\SitemapController::class, 'index']);
 $app->get('/posts', [\App\Controllers\PostController::class, 'index']);
 
 $app->get('/api/v1', [\App\Controllers\Api\IndexController::class, 'index']);
@@ -78,6 +79,12 @@ $app->get('/admin/tags/{id}/edit', [\App\Controllers\Admin\TagController::class,
 $app->post('/admin/tags/{id}', [\App\Controllers\Admin\TagController::class, 'update']);
 $app->post('/admin/tags/{id}/delete', [\App\Controllers\Admin\TagController::class, 'destroy']);
 
+$app->get('/admin/redirects', [\App\Controllers\Admin\RedirectController::class, 'index']);
+$app->get('/admin/redirects/create', [\App\Controllers\Admin\RedirectController::class, 'create']);
+$app->post('/admin/redirects', [\App\Controllers\Admin\RedirectController::class, 'store']);
+$app->get('/admin/redirects/{id}/edit', [\App\Controllers\Admin\RedirectController::class, 'edit']);
+$app->post('/admin/redirects/{id}', [\App\Controllers\Admin\RedirectController::class, 'update']);
+$app->post('/admin/redirects/{id}/delete', [\App\Controllers\Admin\RedirectController::class, 'destroy']);
 $app->get('/admin/media', [\App\Controllers\Admin\MediaController::class, 'index']);
 $app->get('/admin/media/upload', [\App\Controllers\Admin\MediaController::class, 'upload']);
 $app->post('/admin/media', [\App\Controllers\Admin\MediaController::class, 'store']);
