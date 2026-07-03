@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 
 use App\Auth\AuthManager;
 use App\Auth\PasswordHasher;
+use App\Repositories\RoleRepository;
 use App\Repositories\UserRepository;
 use App\Support\Flash;
 use App\Support\Redirect;
@@ -17,11 +18,13 @@ class UserController
 {
     private UserRepository $repo;
     private UserValidator $validator;
+    private RoleRepository $roleRepo;
 
     public function __construct()
     {
         $this->repo = new UserRepository();
         $this->validator = new UserValidator();
+        $this->roleRepo = new RoleRepository();
     }
 
     public function index(Request $request): string|Response
@@ -45,10 +48,11 @@ class UserController
 
     public function create(): string|Response
     {
-        $content = app()->render('admin/users/create');
+        $roles = $this->roleRepo->all();
+        $content = app()->render('admin/users/create', ['roles' => $roles]);
         return app()->render('layouts/admin', [
-            'title' => 'Add New User',
-            'content' => $content
+            'title'   => 'Add New User',
+            'content' => $content,
         ]);
     }
 
@@ -78,10 +82,11 @@ class UserController
             return Redirect::to('/admin/users');
         }
 
-        $content = app()->render('admin/users/edit', ['user' => $user]);
+        $roles = $this->roleRepo->all();
+        $content = app()->render('admin/users/edit', ['user' => $user, 'roles' => $roles]);
         return app()->render('layouts/admin', [
-            'title' => 'Edit User',
-            'content' => $content
+            'title'   => 'Edit User',
+            'content' => $content,
         ]);
     }
 

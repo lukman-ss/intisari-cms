@@ -31,12 +31,7 @@ $app->post('/admin/login', [\App\Controllers\Auth\LoginController::class, 'authe
 $app->post('/admin/logout', [\App\Controllers\Auth\LogoutController::class, 'logout']);
 $app->get('/logout', [\App\Controllers\Auth\LogoutController::class, 'logout']);
 
-$app->get('/admin/dashboard', function () {
-    if (!\App\Auth\AuthManager::guard()->check()) {
-        return \App\Support\Redirect::to('/admin/login');
-    }
-    return app()->render('layouts/admin', ['title' => 'Dashboard', 'content' => app()->render('admin/dashboard')]);
-});
+$app->get('/admin/dashboard', [\App\Controllers\Admin\DashboardController::class, 'index']);
 
 $app->get('/install', [\App\Controllers\InstallController::class, 'index']);
 $app->post('/install', [\App\Controllers\InstallController::class, 'store']);
@@ -95,6 +90,8 @@ $app->post('/admin/comments/{id}/approve', [\App\Controllers\Admin\CommentContro
 $app->post('/admin/comments/{id}/spam', [\App\Controllers\Admin\CommentController::class, 'spam']);
 $app->post('/admin/comments/{id}/trash', [\App\Controllers\Admin\CommentController::class, 'trash']);
 $app->post('/admin/comments/{id}/delete', [\App\Controllers\Admin\CommentController::class, 'destroy']);
+$app->get('/admin/comments/{id}/edit', [\App\Controllers\Admin\CommentController::class, 'edit']);
+$app->post('/admin/comments/{id}/update', [\App\Controllers\Admin\CommentController::class, 'update']);
 $app->post('/comments', [\App\Controllers\CommentController::class, 'store']);
 
 $app->get('/admin/settings/general', [\App\Controllers\Admin\SettingController::class, 'general']);
@@ -125,6 +122,15 @@ $app->post('/admin/plugins/{plugin}/deactivate', [\App\Controllers\Admin\PluginC
 $app->get('/admin/tools/api-tokens', [\App\Controllers\Admin\ApiTokenController::class, 'index']);
 $app->post('/admin/tools/api-tokens', [\App\Controllers\Admin\ApiTokenController::class, 'store']);
 $app->post('/admin/tools/api-tokens/{id}/revoke', [\App\Controllers\Admin\ApiTokenController::class, 'revoke']);
+
+// Profile
+$app->get('/admin/profile', [\App\Controllers\Admin\ProfileController::class, 'show']);
+$app->post('/admin/profile', [\App\Controllers\Admin\ProfileController::class, 'update']);
+
+// Tools
+$app->get('/admin/tools', [\App\Controllers\Admin\ToolsController::class, 'index']);
+$app->get('/admin/tools/export', [\App\Controllers\Admin\ToolsController::class, 'export']);
+$app->post('/admin/tools/import', [\App\Controllers\Admin\ToolsController::class, 'import']);
 
 $app->get('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'index']);
 $app->post('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'store']);

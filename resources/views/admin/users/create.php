@@ -27,11 +27,19 @@
         <div style="margin-bottom: 15px;">
             <label style="display:block; margin-bottom:5px;">Role</label>
             <select name="role" style="width:100%; padding:8px;">
-                <option value="administrator">Administrator</option>
-                <option value="editor">Editor</option>
-                <option value="author">Author</option>
-                <option value="contributor">Contributor</option>
-                <option value="subscriber" selected>Subscriber</option>
+                <?php foreach ($roles ?? [] as $r): ?>
+                    <option value="<?= \App\Support\View::escape($r['name']) ?>"
+                        <?= $r['name'] === 'subscriber' ? 'selected' : '' ?>>
+                        <?= \App\Support\View::escape(ucfirst($r['name'])) ?>
+                    </option>
+                <?php endforeach; ?>
+                <?php if (empty($roles)): ?>
+                    <option value="administrator">Administrator</option>
+                    <option value="editor">Editor</option>
+                    <option value="author">Author</option>
+                    <option value="contributor">Contributor</option>
+                    <option value="subscriber" selected>Subscriber</option>
+                <?php endif; ?>
             </select>
         </div>
 

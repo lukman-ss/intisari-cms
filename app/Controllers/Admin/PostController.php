@@ -8,6 +8,8 @@ use App\Auth\AuthManager;
 use App\Auth\Capability;
 use App\Auth\CapabilityChecker;
 use App\Repositories\PostRepository;
+use App\Repositories\RevisionRepository;
+use App\Repositories\TermRepository;
 use App\Support\Flash;
 use App\Support\PostStatus;
 use App\Support\PostType;
@@ -21,11 +23,13 @@ class PostController
 {
     private PostRepository $repo;
     private PostValidator $validator;
+    private TermRepository $termRepo;
 
     public function __construct()
     {
         $this->repo = new PostRepository();
         $this->validator = new PostValidator();
+        $this->termRepo = new TermRepository();
     }
 
     public function index(Request $request): string|Response
@@ -61,9 +65,15 @@ class PostController
             return Redirect::to('/admin/dashboard');
         }
 
-        $content = app()->render('admin/posts/create');
+        $allCategories = $this->termRepo->allByTaxonomy('category');
+        $allTags = $this->termRepo->allByTaxonomy('post_tag');
+
+        $content = app()->render('admin/posts/create', [
+            'allCategories' => $allCategories,
+            'allTags'       => $allTags,
+        ]);
         return app()->render('layouts/admin', [
-            'title' => 'Add New Post',
+            'title'   => 'Add New Post',
             'content' => $content
         ]);
     }
@@ -94,7 +104,15 @@ class PostController
             return Redirect::back('/admin/posts/create');
         }
 
-        $this->repo->create($data);
+        $postId = $this->repo->create($data);
+
+        // Sync categories and tags
+        $termIds = array_merge(
+            is_array($_POST['categories'] ?? null) ? $_POST['categories'] : [],
+            is_array($_POST['tags'] ?? null) ? $_POST['tags'] : []
+        );
+        $this->termRepo->syncTerms($postId, $termIds);
+
         Flash::set('success', 'Post created successfully.');
         return Redirect::to('/admin/posts');
     }
@@ -111,9 +129,20 @@ class PostController
             return Redirect::to('/admin/posts');
         }
 
-        $content = app()->render('admin/posts/edit', ['post' => $post]);
+        $allCategories    = $this->termRepo->allByTaxonomy('category');
+        $allTags          = $this->termRepo->allByTaxonomy('post_tag');
+        $postCategories   = array_column($this->termRepo->getTermsForPost((int)$id, 'category'), 'id');
+        $postTags         = array_column($this->termRepo->getTermsForPost((int)$id, 'post_tag'), 'id');
+
+        $content = app()->render('admin/posts/edit', [
+            'post'           => $post,
+            'allCategories'  => $allCategories,
+            'allTags'        => $allTags,
+            'postCategories' => $postCategories,
+            'postTags'       => $postTags,
+        ]);
         return app()->render('layouts/admin', [
-            'title' => 'Edit Post',
+            'title'   => 'Edit Post',
             'content' => $content
         ]);
     }
@@ -147,6 +176,14 @@ class PostController
         }
 
         $this->repo->update((int)$id, $data);
+
+        // Sync terms
+        $termIds = array_merge(
+            is_array($_POST['categories'] ?? null) ? $_POST['categories'] : [],
+            is_array($_POST['tags'] ?? null) ? $_POST['tags'] : []
+        );
+        $this->termRepo->syncTerms((int)$id, $termIds);
+
         Flash::set('success', 'Post updated successfully.');
         return Redirect::to("/admin/posts/{$id}/edit");
     }
@@ -214,5 +251,34 @@ class PostController
         }
         \App\Support\Flash::set('success', 'Bulk action completed.');
         return \App\Support\Redirect::back('/admin/posts');
+    }
+
+    public function autosave(Request $request, string $id): Response
+    {
+        header('Content-Type: application/json');
+
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_POSTS)) {
+            return new Response(json_encode(['success' => false, 'message' => 'Permission denied.']), 403);
+        }
+
+        $post = $this->repo->find((int)$id);
+        if (!$post || $post->type !== PostType::POST) {
+            return new Response(json_encode(['success' => false, 'message' => 'Post not found.']), 404);
+        }
+
+        $data = [
+            'title'   => $_POST['title'] ?? '',
+            'content' => $_POST['content'] ?? '',
+            'excerpt' => $_POST['excerpt'] ?? '',
+        ];
+
+        $revRepo = new RevisionRepository();
+        $autosaveId = $revRepo->createAutosave((int)$id, $data);
+
+        return new Response(json_encode([
+            'success'     => true,
+            'autosave_id' => $autosaveId,
+            'message'     => 'Draft saved.',
+        ]));
     }
 }

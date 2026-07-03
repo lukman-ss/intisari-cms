@@ -87,6 +87,57 @@ class CommentController
         return Redirect::back('/admin/comments');
     }
 
+    public function edit(Request $request, string $id): string|Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::MODERATE_COMMENTS)) {
+            Flash::set('error', 'Permission denied.');
+            return Redirect::to('/admin/dashboard');
+        }
+
+        $comment = $this->repo->find((int)$id);
+        if (!$comment) {
+            Flash::set('error', 'Comment not found.');
+            return Redirect::to('/admin/comments');
+        }
+
+        $content = app()->render('admin/comments/edit', ['comment' => $comment]);
+        return app()->render('layouts/admin', [
+            'title'   => 'Edit Comment',
+            'content' => $content,
+        ]);
+    }
+
+    public function update(Request $request, string $id): Response
+    {
+        if (!CapabilityChecker::checkCurrentUser(Capability::MODERATE_COMMENTS)) {
+            return Redirect::to('/admin/dashboard');
+        }
+
+        $comment = $this->repo->find((int)$id);
+        if (!$comment) {
+            Flash::set('error', 'Comment not found.');
+            return Redirect::to('/admin/comments');
+        }
+
+        $content = trim($_POST['content'] ?? '');
+        if (empty($content)) {
+            Flash::set('error', 'Comment content cannot be empty.');
+            return Redirect::back("/admin/comments/{$id}/edit");
+        }
+
+        $db = \App\Database\ConnectionFactory::make();
+        $stmt = $db->prepare("UPDATE comments SET content = ?, author_name = ?, author_email = ? WHERE id = ?");
+        $stmt->execute([
+            $content,
+            $_POST['author_name'] ?? $comment['author_name'],
+            $_POST['author_email'] ?? $comment['author_email'],
+            (int)$id,
+        ]);
+
+        Flash::set('success', 'Comment updated.');
+        return Redirect::to('/admin/comments');
+    }
+
     public function bulk(\Lukman\Http\Request $request): \Lukman\Http\Response
     {
         if (!\App\Auth\CapabilityChecker::checkCurrentUser(\App\Auth\Capability::MODERATE_COMMENTS)) {
@@ -104,11 +155,11 @@ class CommentController
 
         foreach ($ids as $id) {
             if ($action === 'approve') {
-                $this->repo->update((int)$id, ['status' => 'approved']);
+                $this->repo->updateStatus((int)$id, 'approved');
             } elseif ($action === 'spam') {
-                $this->repo->update((int)$id, ['status' => 'spam']);
+                $this->repo->updateStatus((int)$id, 'spam');
             } elseif ($action === 'trash') {
-                $this->repo->update((int)$id, ['status' => 'trash']);
+                $this->repo->updateStatus((int)$id, 'trash');
             } elseif ($action === 'delete') {
                 $this->repo->delete((int)$id);
             }

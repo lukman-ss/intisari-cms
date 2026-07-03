@@ -101,4 +101,50 @@ class TermRepository
         $stmt = $this->db->prepare("DELETE FROM terms WHERE id = ?");
         return $stmt->execute([$id]);
     }
+
+    /**
+     * Get all terms for a given post.
+     */
+    public function getTermsForPost(int $postId, string $taxonomy = ''): array
+    {
+        $sql = "SELECT t.* FROM terms t 
+                JOIN term_relationships tr ON tr.term_id = t.id 
+                WHERE tr.object_id = ?";
+        $params = [$postId];
+
+        if ($taxonomy !== '') {
+            $sql .= " AND t.taxonomy = ?";
+            $params[] = $taxonomy;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Sync terms for a post (replace existing relationships).
+     */
+    public function syncTerms(int $postId, array $termIds): void
+    {
+        $stmt = $this->db->prepare("DELETE FROM term_relationships WHERE object_id = ?");
+        $stmt->execute([$postId]);
+
+        foreach ($termIds as $termId) {
+            $termId = (int)$termId;
+            if ($termId <= 0) continue;
+            $stmt = $this->db->prepare("INSERT OR IGNORE INTO term_relationships (object_id, term_id) VALUES (?, ?)");
+            $stmt->execute([$postId, $termId]);
+        }
+    }
+
+    /**
+     * Get all terms by taxonomy (no pagination).
+     */
+    public function allByTaxonomy(string $taxonomy): array
+    {
+        $stmt = $this->db->prepare("SELECT * FROM terms WHERE taxonomy = ? ORDER BY name ASC");
+        $stmt->execute([$taxonomy]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

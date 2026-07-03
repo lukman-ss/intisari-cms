@@ -8,6 +8,7 @@ use App\Auth\AuthManager;
 use App\Auth\Capability;
 use App\Auth\CapabilityChecker;
 use App\Repositories\PostRepository;
+use App\Repositories\RevisionRepository;
 use App\Support\Flash;
 use App\Support\PostStatus;
 use App\Support\PostType;
@@ -227,5 +228,34 @@ class PageController
         }
         \App\Support\Flash::set('success', 'Bulk action completed.');
         return \App\Support\Redirect::back('/admin/pages');
+    }
+
+    public function autosave(Request $request, string $id): Response
+    {
+        header('Content-Type: application/json');
+
+        if (!CapabilityChecker::checkCurrentUser(Capability::EDIT_PAGES)) {
+            return new Response(json_encode(['success' => false, 'message' => 'Permission denied.']), 403);
+        }
+
+        $pageData = $this->repo->find((int)$id);
+        if (!$pageData || $pageData->type !== PostType::PAGE) {
+            return new Response(json_encode(['success' => false, 'message' => 'Page not found.']), 404);
+        }
+
+        $data = [
+            'title'   => $_POST['title'] ?? '',
+            'content' => $_POST['content'] ?? '',
+            'excerpt' => $_POST['excerpt'] ?? '',
+        ];
+
+        $revRepo = new RevisionRepository();
+        $autosaveId = $revRepo->createAutosave((int)$id, $data);
+
+        return new Response(json_encode([
+            'success'     => true,
+            'autosave_id' => $autosaveId,
+            'message'     => 'Draft saved.',
+        ]));
     }
 }

@@ -20,7 +20,9 @@ class SettingController
     private array $whitelist = [
         'general' => ['site_title', 'tagline', 'timezone', 'locale'],
         'reading' => ['homepage_mode', 'homepage_page_id', 'posts_page_id', 'posts_per_page'],
-        'discussion' => ['comment_moderation'],
+        'discussion' => ['comment_moderation', 'allow_comments', 'close_comments_days', 'close_comments_after',
+                         'notify_new_comment', 'notify_moderation', 'comment_previously_approved',
+                         'comment_max_links', 'comment_blacklist'],
         'media' => ['upload_size_limit', 'thumbnail_size_w', 'thumbnail_size_h', 'medium_size_w', 'medium_size_h', 'large_size_w', 'large_size_h'],
         'permalinks' => ['permalink_structure']
     ];
@@ -83,8 +85,13 @@ class SettingController
 
     public function updateDiscussion(Request $request): Response
     {
-        if (!isset($_POST['comment_moderation'])) {
-            $_POST['comment_moderation'] = '0';
+        // Checkboxes that are not submitted if unchecked — default to '0'
+        $checkboxKeys = ['comment_moderation', 'allow_comments', 'close_comments_days',
+                         'notify_new_comment', 'notify_moderation', 'comment_previously_approved'];
+        foreach ($checkboxKeys as $key) {
+            if (!isset($_POST[$key])) {
+                $_POST[$key] = '0';
+            }
         }
         return $this->updateGroup('discussion');
     }
