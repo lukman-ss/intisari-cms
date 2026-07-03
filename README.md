@@ -2,6 +2,8 @@
 
 Intisari CMS is a lightweight PHP CMS application built on IntisariPHP. It includes a public site, admin dashboard, posts, pages, media, comments, users, roles, settings, themes, plugins, widgets, API tokens, and a SQLite-first installer.
 
+Full feature documentation is available in [`docs/features.md`](docs/features.md).
+
 ## Requirements
 
 - PHP 8.2 or newer

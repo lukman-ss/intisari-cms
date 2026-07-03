@@ -100,6 +100,12 @@ class PageController
             return Redirect::back('/admin/pages/create');
         }
 
+        // Clean up data for database insertion
+        unset($data['csrf_token']);
+        if (empty($data['featured_image_id'])) {
+            $data['featured_image_id'] = null;
+        }
+
         $this->repo->create($data);
         Flash::set('success', 'Page created successfully.');
         return Redirect::to('/admin/pages');
@@ -158,6 +164,12 @@ class PageController
         if (!empty($errors)) {
             Flash::set('error', implode(' ', $errors));
             return Redirect::back("/admin/pages/{$id}/edit");
+        }
+
+        // Clean up data for database update
+        unset($data['csrf_token']);
+        if (empty($data['featured_image_id'])) {
+            $data['featured_image_id'] = null;
         }
 
         $this->repo->update((int)$id, $data);

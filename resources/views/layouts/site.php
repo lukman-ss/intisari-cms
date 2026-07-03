@@ -10,6 +10,7 @@
         nav a { margin-right: 15px; text-decoration: none; color: #0073aa; }
         footer { border-top: 1px solid #ccc; margin-top: 40px; padding-top: 20px; text-align: center; color: #666; }
     </style>
+    <?php \App\Plugins\HookManager::doAction('site_head'); ?>
 </head>
 <body>
     <header>
@@ -27,5 +28,6 @@
     <footer>
         &copy; <?= date('Y') ?> Intisari CMS
     </footer>
+    <?php \App\Plugins\HookManager::doAction('site_footer'); ?>
 </body>
 </html>

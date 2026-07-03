@@ -19,7 +19,10 @@ class PostRepository
 
     public function find(int $id): ?Post
     {
-        $stmt = $this->db->prepare("SELECT * FROM posts WHERE id = ?");
+        $stmt = $this->db->prepare("SELECT posts.*, media.filename as featured_image_url 
+                                    FROM posts 
+                                    LEFT JOIN media ON posts.featured_image_id = media.id 
+                                    WHERE posts.id = ?");
         $stmt->execute([$id]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -28,7 +31,10 @@ class PostRepository
 
     public function findBySlug(string $slug, string $type = 'post'): ?Post
     {
-        $stmt = $this->db->prepare("SELECT * FROM posts WHERE slug = ? AND type = ?");
+        $stmt = $this->db->prepare("SELECT posts.*, media.filename as featured_image_url 
+                                    FROM posts 
+                                    LEFT JOIN media ON posts.featured_image_id = media.id 
+                                    WHERE posts.slug = ? AND posts.type = ?");
         $stmt->execute([$slug, $type]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -41,14 +47,14 @@ class PostRepository
         
         $params = [$type];
         if ($status !== '') {
-            $where = "WHERE type = ? AND status = ?";
+            $where = "WHERE posts.type = ? AND posts.status = ?";
             $params[] = $status;
         } else {
-            $where = "WHERE type = ? AND status != 'trash'";
+            $where = "WHERE posts.type = ? AND posts.status != 'trash'";
         }
         
         if ($search !== '') {
-            $where .= " AND (title LIKE ? OR content LIKE ?)";
+            $where .= " AND (posts.title LIKE ? OR posts.content LIKE ?)";
             $searchParam = '%' . $search . '%';
             $params[] = $searchParam;
             $params[] = $searchParam;
@@ -58,7 +64,10 @@ class PostRepository
         $stmt->execute($params);
         $total = (int)$stmt->fetchColumn();
 
-        $stmt = $this->db->prepare("SELECT * FROM posts $where ORDER BY id DESC LIMIT ? OFFSET ?");
+        $stmt = $this->db->prepare("SELECT posts.*, media.filename as featured_image_url 
+                                    FROM posts 
+                                    LEFT JOIN media ON posts.featured_image_id = media.id 
+                                    $where ORDER BY posts.id DESC LIMIT ? OFFSET ?");
         $stmt->execute([...$params, $perPage, $offset]);
         
         $items = array_map(fn($row) => new Post($row), $stmt->fetchAll(PDO::FETCH_ASSOC));

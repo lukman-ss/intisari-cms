@@ -19,6 +19,7 @@ function isActive(string $prefix, string $current): string {
         #admin-sidebar ul li ul { padding-left: 10px; }
         #admin-sidebar ul li ul li a { font-size: 12px; padding: 5px 10px; }
     </style>
+    <?php \App\Plugins\HookManager::doAction('admin_head'); ?>
 </head>
 <body>
     <aside id="admin-sidebar">
@@ -101,6 +102,8 @@ function isActive(string $prefix, string $current): string {
         </header>
 
         <main id="admin-content-area">
+            <?php \App\Plugins\HookManager::doAction('admin_notices'); ?>
+
             <?php if (\App\Support\Flash::has('success')): ?>
                 <div class="flash-message success">
                     <?= \App\Support\View::escape((string)\App\Support\Flash::get('success')) ?>
@@ -120,5 +123,6 @@ function isActive(string $prefix, string $current): string {
             Thank you for creating with Intisari.
         </footer>
     </div>
+    <?php \App\Plugins\HookManager::doAction('admin_footer'); ?>
 </body>
 </html>

@@ -104,6 +104,12 @@ class PostController
             return Redirect::back('/admin/posts/create');
         }
 
+        // Clean up data for database insertion
+        unset($data['csrf_token'], $data['categories'], $data['tags']);
+        if (empty($data['featured_image_id'])) {
+            $data['featured_image_id'] = null;
+        }
+
         $postId = $this->repo->create($data);
 
         // Sync categories and tags
@@ -173,6 +179,12 @@ class PostController
         if (!empty($errors)) {
             Flash::set('error', implode(' ', $errors));
             return Redirect::back("/admin/posts/{$id}/edit");
+        }
+
+        // Clean up data for database update
+        unset($data['csrf_token'], $data['categories'], $data['tags']);
+        if (empty($data['featured_image_id'])) {
+            $data['featured_image_id'] = null;
         }
 
         $this->repo->update((int)$id, $data);

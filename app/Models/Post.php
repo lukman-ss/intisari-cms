@@ -16,6 +16,8 @@ class Post
     public string $status = 'draft';
     public int $parent_id = 0;
     public int $menu_order = 0;
+    public ?int $featured_image_id = null;
+    public ?string $featured_image_url = null;
     public string $comment_status = 'open';
     public ?string $published_at = null;
     public string $created_at;
