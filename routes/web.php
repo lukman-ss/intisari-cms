@@ -129,9 +129,6 @@ $app->post('/admin/tools/api-tokens/{id}/revoke', [\App\Controllers\Admin\ApiTok
 $app->get('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'index']);
 $app->post('/admin/appearance/widgets', [\App\Controllers\Admin\WidgetController::class, 'store']);
 
-$app->get('/{p1}', [\App\Routing\ContentRouter::class, 'handle']);
-$app->get('/{p1}/{p2}', [\App\Routing\ContentRouter::class, 'handle']);
-$app->get('/{p1}/{p2}/{p3}', [\App\Routing\ContentRouter::class, 'handle']);
 // Bulk routes
 $app->post('/admin/users/bulk', [\App\Controllers\Admin\UserController::class, 'bulk']);
 $app->post('/admin/posts/bulk', [\App\Controllers\Admin\PostController::class, 'bulk']);
@@ -148,3 +145,7 @@ $app->post('/admin/revisions/{id}/restore', [\App\Controllers\Admin\RevisionCont
 // Autosave routes
 $app->post('/admin/posts/{id}/autosave', [\App\Controllers\Admin\PostController::class, 'autosave']);
 $app->post('/admin/pages/{id}/autosave', [\App\Controllers\Admin\PageController::class, 'autosave']);
+
+$app->get('/{p1}', [\App\Routing\ContentRouter::class, 'handle']);
+$app->get('/{p1}/{p2}', [\App\Routing\ContentRouter::class, 'handle']);
+$app->get('/{p1}/{p2}/{p3}', [\App\Routing\ContentRouter::class, 'handle']);

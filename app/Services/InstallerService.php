@@ -6,8 +6,8 @@ namespace App\Services;
 
 use App\Database\ConnectionFactory;
 use App\Database\MigrationRunner;
+use App\Auth\PasswordHasher;
 use Intisari\Application;
-use PDO;
 
 class InstallerService
 {
@@ -47,21 +47,42 @@ class InstallerService
         }
 
         $app = Application::getGlobal();
+        if ($app === null) {
+            throw new \RuntimeException('Application is not bootstrapped.');
+        }
+
+        $siteTitle = trim((string)($data['site_title'] ?? ''));
+        $adminUsername = trim((string)($data['admin_username'] ?? ''));
+        $adminEmail = trim((string)($data['admin_email'] ?? ''));
+        $adminPassword = (string)($data['admin_password'] ?? '');
+
+        if ($siteTitle === '' || $adminUsername === '' || $adminEmail === '' || $adminPassword === '') {
+            throw new \InvalidArgumentException('All installation fields are required.');
+        }
+
+        if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException('A valid admin email is required.');
+        }
+
+        if (strlen($adminPassword) < 8) {
+            throw new \InvalidArgumentException('Admin password must be at least 8 characters.');
+        }
+
         $pdo = ConnectionFactory::make();
         
         $runner = new MigrationRunner($pdo);
-        $runner->run($app ? $app->basePath('database/migrations') : 'database/migrations');
+        $runner->run($app->basePath('database/migrations'));
 
         $stmt = $pdo->prepare("INSERT INTO users (username, email, password, created_at, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)");
-        $password = password_hash($data['admin_password'], PASSWORD_DEFAULT);
+        $password = (new PasswordHasher())->make($adminPassword);
         $stmt->execute([
-            $data['admin_username'],
-            $data['admin_email'],
+            $adminUsername,
+            $adminEmail,
             $password,
         ]);
 
         $stmt = $pdo->prepare("INSERT INTO options (option_name, option_value) VALUES (?, ?)");
-        $stmt->execute(['site_name', $data['site_title']]);
+        $stmt->execute(['site_name', $siteTitle]);
 
         file_put_contents($this->lockFile, date('Y-m-d H:i:s'));
     }

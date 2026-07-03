@@ -1,9 +1,13 @@
 /vendor/
 /.env
 /database/cms.sqlite
+/storage/*.lock
 /storage/sessions/*
 !/storage/sessions/.gitkeep
 /storage/logs/*
 !/storage/logs/.gitkeep
+/storage/uploads/*
+!/storage/uploads/.gitkeep
 /.phpunit.result.cache
 /.phpunit.cache/
+/*.php.bak

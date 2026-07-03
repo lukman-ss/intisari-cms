@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Security;
 
 use App\Support\Csrf;
+use Lukman\Http\MiddlewareInterface;
 use Lukman\Http\Request;
+use Lukman\Http\RequestHandlerInterface;
 use Lukman\Http\Response;
 
-class CsrfGuard
+class CsrfGuard implements MiddlewareInterface
 {
     public function handle(Request $request, \Closure $next): string|Response
     {
@@ -28,5 +30,11 @@ class CsrfGuard
         }
 
         return $next($request);
+    }
+
+    public function process(Request $request, RequestHandlerInterface $handler): Response
+    {
+        $response = $this->handle($request, fn (Request $request) => $handler->handle($request));
+        return $response instanceof Response ? $response : new Response((string)$response);
     }
 }

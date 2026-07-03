@@ -17,6 +17,9 @@
 <body>
     <div class="box">
         <h1>Welcome to Intisari CMS</h1>
+        <?php if ($message = \App\Support\Flash::get('error')): ?>
+            <div class="error-msg"><?= \App\Support\View::escape($message) ?></div>
+        <?php endif; ?>
         
         <?php if (in_array(false, $requirements, true)): ?>
             <div class="error-msg">
@@ -51,7 +54,7 @@
                 </div>
                 <div class="input-group">
                     <label>Admin Password</label>
-                    <input type="password" name="admin_password" required>
+                    <input type="password" name="admin_password" minlength="8" required>
                 </div>
                 <div class="input-group">
                     <label>Database Driver</label>

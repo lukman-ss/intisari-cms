@@ -6,10 +6,12 @@ namespace App\Middleware;
 
 use App\Auth\ApiTokenManager;
 use App\Http\JsonResponse;
+use Lukman\Http\MiddlewareInterface;
 use Lukman\Http\Request;
+use Lukman\Http\RequestHandlerInterface;
 use Lukman\Http\Response;
 
-class ApiAuthMiddleware
+class ApiAuthMiddleware implements MiddlewareInterface
 {
     public function handle(Request $request, \Closure $next): string|Response
     {
@@ -31,5 +33,11 @@ class ApiAuthMiddleware
         \App\Auth\AuthManager::guard()->loginUsingId($userId);
         
         return $next($request);
+    }
+
+    public function process(Request $request, RequestHandlerInterface $handler): Response
+    {
+        $response = $this->handle($request, fn (Request $request) => $handler->handle($request));
+        return $response instanceof Response ? $response : new Response((string)$response);
     }
 }

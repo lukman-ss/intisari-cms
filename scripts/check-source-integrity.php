@@ -74,11 +74,11 @@ foreach (phpFiles($root) as $path) {
 }
 
 if ($errors === []) {
-    echo "✓ Source integrity OK ({$scanned} files checked).\n";
+    echo "Source integrity OK ({$scanned} files checked).\n";
     exit(0);
 }
 
-echo "✗ Source integrity FAILED ({$scanned} files checked, " . count($errors) . " error(s)):\n";
+echo "Source integrity FAILED ({$scanned} files checked, " . count($errors) . " error(s)):\n";
 foreach ($errors as $err) {
     echo "  {$err}\n";
 }

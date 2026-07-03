@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Services\InstallerService;
+use App\Support\Flash;
 use App\Support\Redirect;
 use Lukman\Http\Request;
 use Lukman\Http\Response;
@@ -48,6 +49,7 @@ class InstallController
             $installer->install($data);
             return Redirect::to('/install/done');
         } catch (\Exception $e) {
+            Flash::set('error', $e->getMessage());
             return Redirect::to('/install');
         }
     }
