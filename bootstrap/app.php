@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../app/Helpers/plugin_helpers.php';
+require_once __DIR__ . '/../app/Support/helpers.php';
+
 use Intisari\Application;
 
 $app = new Application(dirname(__DIR__));

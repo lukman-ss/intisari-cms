@@ -12,7 +12,10 @@
     <?php endif; ?>
 
     <div class="content" style="margin-top: 20px;">
-        <?= nl2br(\App\Support\View::escape($post->content ?? '')) ?>
+        <?php 
+            $contentHtml = nl2br(\App\Support\View::escape($post->content ?? '')); 
+            echo \App\Plugins\ShortcodeManager::parse($contentHtml);
+        ?>
     </div>
 
     <?php
