@@ -1,18 +1,12 @@
-# Security Policy
+﻿# Security Policy
 
 ## Supported Versions
 
-Only the latest `main` branch is currently supported until the first tagged stable release.
+| Version | Supported          |
+| ------- | ------------------ |
+| 1.x.x   | :white_check_mark: |
+| < 1.0   | :x:                |
 
 ## Reporting a Vulnerability
 
-Report vulnerabilities privately to `lukmanumb1@gmail.com`.
-
-Please include:
-
-- Affected version or commit
-- Steps to reproduce
-- Expected and actual impact
-- Any relevant logs or screenshots
-
-Do not open public issues for exploitable security problems.
+Please report any security vulnerabilities to lukmanumb1@gmail.com. We will respond as soon as possible.
